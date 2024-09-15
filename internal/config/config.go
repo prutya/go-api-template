@@ -1,10 +1,15 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"time"
+
+	"github.com/spf13/viper"
+)
 
 type Config struct {
-	LogLevel      string `mapstructure:"LOG_LEVEL"`
-	LogTimeFormat string `mapstructure:"LOG_TIME_FORMAT"`
+	LogLevel       string        `mapstructure:"LOG_LEVEL"`
+	LogTimeFormat  string        `mapstructure:"LOG_TIME_FORMAT"`
+	RequestTimeout time.Duration `mapstructure:"REQUEST_TIMEOUT"`
 }
 
 func Load() (*Config, error) {
