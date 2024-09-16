@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
@@ -54,13 +55,19 @@ func main() {
 	// Initialize the Timeout middleware
 	router.Use(chimiddleware.Timeout(cfg.RequestTimeout))
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		handlerutils.RenderJson(w, r, map[string]any{"message": "Hello World!"}, 200, nil)
-	})
+	// Initialize the CORS middleware
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   cfg.CorsAllowedOrigins,
+		AllowedMethods:   cfg.CorsAllowedMethods,
+		AllowedHeaders:   cfg.CorsAllowedHeaders,
+		ExposedHeaders:   cfg.CorsExposedHeaders,
+		AllowCredentials: cfg.CorsAllowCredentials,
+		MaxAge:           int(cfg.CorsMaxAge.Seconds()),
+	}))
 
 	router.Get("/ts", ts.NewHandler())
 
-	server := &http.Server{Addr: ":3000", Handler: router}
+	server := &http.Server{Addr: ":3333", Handler: router}
 
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		logger.Fatal("HTTP server error", zap.Error(err))

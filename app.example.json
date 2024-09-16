@@ -1,5 +1,11 @@
 {
   "log_level": "debug",
   "log_time_format": "iso8601",
-  "request_timeout": "60s"
+  "request_timeout": "60s",
+  "cors_allowed_origins": ["http://localhost:3000"],
+  "cors_allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  "cors_allowed_headers": ["Accept", "Authorization", "Content-Type", "X-CSRF-Token"],
+  "cors_exposed_headers": ["Link"],
+  "cors_allow_credentials": false,
+  "cors_max_age": "5m"
 }
