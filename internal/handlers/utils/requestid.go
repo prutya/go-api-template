@@ -1,27 +1,27 @@
-package middleware
+package utils
 
 import (
 	"context"
 	"net/http"
-	"prutya/todo/internal/handlers/utils"
 )
 
 type RequestIdContextKeyType struct{}
 
 type GenerateRequestIDFunc func(*http.Request) (string, error)
 
-var RequestIdContextKey = RequestIdContextKeyType{}
+var HeaderXRequestID = http.CanonicalHeaderKey("X-Request-Id")
+var RequestIDContextKey = RequestIdContextKeyType{}
 
-func NewRequestID(generateRequestID GenerateRequestIDFunc) func(http.Handler) http.Handler {
+func NewRequestIDMiddleware(generateRequestID GenerateRequestIDFunc) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			requestId := r.Header.Get("x-request-id")
+			requestId := r.Header.Get(HeaderXRequestID)
 
 			if requestId == "" {
 				randomString, err := generateRequestID(r)
 
 				if err != nil {
-					utils.RenderError(w, r, err)
+					RenderError(w, r, err)
 					return
 				}
 
@@ -38,11 +38,11 @@ func NewRequestID(generateRequestID GenerateRequestIDFunc) func(http.Handler) ht
 }
 
 func SetRequestId(r *http.Request, requestId string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), RequestIdContextKey, requestId))
+	return r.WithContext(context.WithValue(r.Context(), RequestIDContextKey, requestId))
 }
 
 func GetRequestId(r *http.Request) (string, bool) {
-	requestId, ok := r.Context().Value(RequestIdContextKey).(string)
+	requestId, ok := r.Context().Value(RequestIDContextKey).(string)
 
 	return requestId, ok
 }

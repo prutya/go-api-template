@@ -1,4 +1,5 @@
 {
   "log_level": "debug",
-  "log_time_format": "iso8601"
+  "log_time_format": "iso8601",
+  "request_timeout": "60s"
 }
