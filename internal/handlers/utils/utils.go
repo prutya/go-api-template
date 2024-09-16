@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type ErrorResponse struct {
@@ -31,6 +33,24 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 			Error:   serverError.Code,
 			Details: serverError.Details,
 		}, serverError.HttpStatusCode, nil)
+
+		return
+	}
+
+	if validationErrors, isValidationErrors := err.(validator.ValidationErrors); isValidationErrors {
+		details := make([]ServerErrorDetail, len(validationErrors))
+		for i, e := range validationErrors {
+			details[i] = ServerErrorDetail{
+				Subject:    e.Field(),
+				Constraint: e.Tag(),
+				Args:       e.Param(),
+			}
+		}
+
+		RenderJson(w, r, &ErrorResponse{
+			Error:   ErrCodeInvalidParams,
+			Details: details,
+		}, http.StatusBadRequest, nil)
 
 		return
 	}

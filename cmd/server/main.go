@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"prutya/todo/internal/config"
+	"prutya/todo/internal/handlers/echo"
 	"prutya/todo/internal/handlers/ts"
 	handlerutils "prutya/todo/internal/handlers/utils"
 	"prutya/todo/internal/logger"
@@ -66,6 +67,7 @@ func main() {
 	}))
 
 	router.Get("/ts", ts.NewHandler())
+	router.Post("/echo", echo.NewHandler())
 
 	server := &http.Server{Addr: ":3333", Handler: router}
 

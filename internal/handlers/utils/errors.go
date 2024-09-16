@@ -1,5 +1,9 @@
 package utils
 
+import (
+	"net/http"
+)
+
 type ServerError struct {
 	HttpStatusCode int
 	Code           string
@@ -12,6 +16,8 @@ type ServerErrorDetail struct {
 	Constraint string `json:"constraint"`
 	Args       string `json:"args"`
 }
+
+var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
 
 func NewServerError(code string, httpStatusCode int) *ServerError {
 	return NewServerErrorWithInner(code, httpStatusCode, nil)
@@ -28,4 +34,8 @@ func NewServerErrorWithInner(code string, httpStatusCode int, innerError error) 
 // Debug only
 func (e *ServerError) Error() string {
 	return e.Code
+}
+
+func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
+	RenderError(w, r, ErrInvalidJson)
 }
