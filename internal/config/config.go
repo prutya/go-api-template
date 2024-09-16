@@ -14,7 +14,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	viper.AddConfigPath(".")
-	viper.SetConfigName("app.config")
+	viper.SetConfigName("app")
 	viper.SetConfigType("json")
 
 	viper.SetEnvPrefix("APP")
