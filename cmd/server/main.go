@@ -15,11 +15,11 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"prutya/todo/internal/config"
-	"prutya/todo/internal/handlers/echo"
-	"prutya/todo/internal/handlers/ts"
-	handlerutils "prutya/todo/internal/handlers/utils"
-	"prutya/todo/internal/logger"
+	"prutya/go-api-template/internal/config"
+	"prutya/go-api-template/internal/handlers/echo"
+	"prutya/go-api-template/internal/handlers/ts"
+	handlerutils "prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 )
 
 func main() {

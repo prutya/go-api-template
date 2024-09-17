@@ -1,4 +1,4 @@
-module prutya/todo
+module prutya/go-api-template
 
 go 1.23.1
 

@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
-	internallogger "prutya/todo/internal/logger"
+	internallogger "prutya/go-api-template/internal/logger"
 )
 
 type ResponseInfo struct {

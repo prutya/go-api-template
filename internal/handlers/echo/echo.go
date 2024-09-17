@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"prutya/todo/internal/handlers/utils"
+	"prutya/go-api-template/internal/handlers/utils"
 )
 
 type request struct {

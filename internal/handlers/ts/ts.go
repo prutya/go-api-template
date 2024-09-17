@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"prutya/todo/internal/handlers/utils"
+	"prutya/go-api-template/internal/handlers/utils"
 )
 
 func NewHandler() http.HandlerFunc {
