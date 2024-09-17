@@ -16,6 +16,8 @@ type Config struct {
 	CorsExposedHeaders   []string      `mapstructure:"CORS_EXPOSED_HEADERS"`
 	CorsAllowCredentials bool          `mapstructure:"CORS_ALLOW_CREDENTIALS"`
 	CorsMaxAge           time.Duration `mapstructure:"CORS_MAX_AGE"`
+	ShutdownTimeout      time.Duration `mapstructure:"SHUTDOWN_TIMEOUT"`
+	ListenAddr           string        `mapstructure:"LISTEN_ADDR"`
 }
 
 func Load() (*Config, error) {
@@ -25,6 +27,18 @@ func Load() (*Config, error) {
 
 	viper.SetEnvPrefix("APP")
 	viper.AutomaticEnv()
+
+	viper.SetDefault("log_level", "debug")
+	viper.SetDefault("log_time_format", "iso8601")
+	viper.SetDefault("request_timeout", 60*time.Second)
+	viper.SetDefault("cors_allowed_origins", []string{"http://localhost:3000"})
+	viper.SetDefault("cors_allowed_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
+	viper.SetDefault("cors_allowed_headers", []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"})
+	viper.SetDefault("cors_exposed_headers", []string{"Link"})
+	viper.SetDefault("cors_allow_credentials", false)
+	viper.SetDefault("cors_max_age", 5*time.Minute)
+	viper.SetDefault("shutdown_timeout", 15*time.Second)
+	viper.SetDefault("listen_addr", ":3333")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

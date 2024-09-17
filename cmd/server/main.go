@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -66,12 +71,63 @@ func main() {
 		MaxAge:           int(cfg.CorsMaxAge.Seconds()),
 	}))
 
+	// Initialize the routes
 	router.Get("/ts", ts.NewHandler())
 	router.Post("/echo", echo.NewHandler())
 
-	server := &http.Server{Addr: ":3333", Handler: router}
+	// Prepare the server
+	server := &http.Server{Addr: cfg.ListenAddr, Handler: router}
 
+	// Prepare channels for shutdown signals
+	shutdownSignals := map[string]chan os.Signal{
+		"http_shutdown": make(chan os.Signal, 1),
+	}
+
+	// Subscribe to shutdown signals from the OS
+	for k := range shutdownSignals {
+		signal.Notify(shutdownSignals[k], syscall.SIGINT, syscall.SIGTERM)
+	}
+
+	// Make sure to wait for every internal process to complete
+	var cleanupWg sync.WaitGroup
+	cleanupWg.Add(len(shutdownSignals))
+
+	// HTTP shutdown goroutine
+	go func() {
+		defer cleanupWg.Done()
+
+		// Wait for the OS signals
+		<-shutdownSignals["http_shutdown"]
+
+		// Prepare a shutdown context
+		shutdownCtx, shutdownRelease := context.WithTimeout(
+			context.Background(),
+			cfg.ShutdownTimeout,
+		)
+
+		// If the server shuts down before the timeout... TODO: Add description
+		defer shutdownRelease()
+
+		// Shutdown the server with a timeout to let it complete the processing
+		// of existing requests
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.Fatal("HTTP shutdown error", zap.Error(err))
+		}
+
+		logger.Info("HTTP shutdown complete")
+	}()
+
+	logger.Info("Listening", zap.String("addr", cfg.ListenAddr))
+
+	// Run the server
 	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		logger.Fatal("HTTP server error", zap.Error(err))
 	}
+
+	logger.Info("HTTP shutdown started")
+
+	// Wait for cleanups to complete
+	cleanupWg.Wait()
+
+	logger.Info("Bye!")
 }
