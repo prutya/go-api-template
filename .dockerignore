@@ -1,0 +1,6 @@
+.git
+.dockerignore
+.gitignore
+app.example.json
+app.json
+Dockerfile
