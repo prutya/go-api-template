@@ -16,10 +16,11 @@ import (
 	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
+	dbpkg "prutya/go-api-template/internal/db"
 	"prutya/go-api-template/internal/handlers/echo"
 	"prutya/go-api-template/internal/handlers/ts"
 	handlerutils "prutya/go-api-template/internal/handlers/utils"
-	"prutya/go-api-template/internal/logger"
+	loggerpkg "prutya/go-api-template/internal/logger"
 )
 
 func main() {
@@ -30,11 +31,24 @@ func main() {
 	}
 
 	// Initialize the logger
-	logger, err := logger.New(cfg.LogLevel, cfg.LogTimeFormat)
+	logger, err := loggerpkg.New(cfg.LogLevel, cfg.LogTimeFormat)
 	if err != nil {
 		panic(err)
 	}
-	logger.Debug("Logger OK")
+	logger.Info("Logger OK")
+
+	// Initialize the main app context
+	ctx := context.WithValue(context.Background(), loggerpkg.LoggerContextKey{}, logger)
+
+	// Initialize the database connection
+	db := dbpkg.New(cfg.DatabaseUrl)
+
+	// Smoke-test the database connection
+	if err := db.PingContext(ctx); err == nil {
+		logger.Info("Database OK")
+	} else {
+		logger.Fatal("Failed to connect to the database", zap.Error(err))
+	}
 
 	// Initialize the router
 	router := chi.NewRouter()

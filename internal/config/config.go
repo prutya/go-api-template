@@ -9,6 +9,7 @@ import (
 type Config struct {
 	LogLevel             string        `mapstructure:"LOG_LEVEL"`
 	LogTimeFormat        string        `mapstructure:"LOG_TIME_FORMAT"`
+	DatabaseUrl          string        `mapstructure:"DATABASE_URL"`
 	RequestTimeout       time.Duration `mapstructure:"REQUEST_TIMEOUT"`
 	CorsAllowedOrigins   []string      `mapstructure:"CORS_ALLOWED_ORIGINS"`
 	CorsAllowedMethods   []string      `mapstructure:"CORS_ALLOWED_METHODS"`
