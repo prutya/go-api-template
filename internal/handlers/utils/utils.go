@@ -2,10 +2,14 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
+
+	"prutya/go-api-template/internal/logger"
 )
 
 type ErrorResponse struct {
@@ -18,9 +22,15 @@ const ContentTypeJson = "application/json"
 
 var HeaderContentType = http.CanonicalHeaderKey("Content-Type")
 var HeaderContentLength = http.CanonicalHeaderKey("Content-Length")
-var EmptyHeaders = map[string]string{}
+
+var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
+
+func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
+	RenderError(w, r, ErrInvalidJson)
+}
 
 func RenderError(w http.ResponseWriter, r *http.Request, err error) {
+	// Handle `ServerError`s
 	if serverError, isServerError := err.(*ServerError); isServerError {
 		responseInfo, hasResponseInfo := GetRequestResponseInfo(r)
 
@@ -37,6 +47,7 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 		return
 	}
 
+	// Handle params validation errors
 	if validationErrors, isValidationErrors := err.(validator.ValidationErrors); isValidationErrors {
 		details := make([]ServerErrorDetail, len(validationErrors))
 		for i, e := range validationErrors {
@@ -58,38 +69,52 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 	RenderJson(w, r, &ErrorResponse{Error: ErrCodeInternal}, http.StatusInternalServerError, nil)
 }
 
-func RenderJson(w http.ResponseWriter, r *http.Request, object any, httpStatusCode int, headers map[string]string) {
-	responseInfo, hasResponseInfo := GetRequestResponseInfo(r)
-
+func RenderJson(
+	w http.ResponseWriter,
+	r *http.Request,
+	object any,
+	httpStatusCode int,
+	additionalHeaders map[string]string,
+) {
 	json, marshalErr := json.Marshal(object)
 
 	if marshalErr != nil {
-		msg := []byte(ErrCodeInternal)
-
-		w.Header().Set(HeaderContentType, ContentTypeText)
-		w.Header().Set(HeaderContentLength, strconv.Itoa(len(msg)))
-
-		w.WriteHeader(http.StatusInternalServerError)
-
-		if hasResponseInfo {
-			responseInfo.HttpStatus = http.StatusInternalServerError
+		if logger, loggerOk := logger.GetContextLogger(r.Context()); loggerOk {
+			logger.Error("Failed to render an object as JSON", zap.Any("object", object))
 		}
 
-		w.Write(msg)
+		RenderRawJson(
+			w,
+			r,
+			[]byte(fmt.Sprintf("{\"error\":\"%s\"}", ErrCodeInternal)),
+			http.StatusInternalServerError,
+			nil,
+		)
 
 		return
 	}
 
+	RenderRawJson(w, r, json, httpStatusCode, additionalHeaders)
+}
+
+func RenderRawJson(
+	w http.ResponseWriter,
+	r *http.Request,
+	json []byte,
+	httpStatusCode int,
+	additionalHeaders map[string]string,
+) {
 	w.Header().Set(HeaderContentType, ContentTypeJson)
 	w.Header().Set(HeaderContentLength, strconv.Itoa(len(json)))
 
-	for k, v := range headers {
-		w.Header().Set(k, v)
+	for headerName, headerValue := range additionalHeaders {
+		w.Header().Set(headerName, headerValue)
 	}
 
 	w.WriteHeader(httpStatusCode)
 
-	if hasResponseInfo {
+	// Write the response status code in logs
+	if responseInfo, hasResponseInfo := GetRequestResponseInfo(r); hasResponseInfo {
 		responseInfo.HttpStatus = httpStatusCode
 	}
 

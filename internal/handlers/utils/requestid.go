@@ -17,6 +17,7 @@ func NewRequestIDMiddleware(generateRequestID GenerateRequestIDFunc) func(http.H
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			requestId := r.Header.Get(HeaderXRequestID)
 
+			// Generate a request ID if there's none
 			if requestId == "" {
 				randomString, err := generateRequestID(r)
 

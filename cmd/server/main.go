@@ -18,7 +18,7 @@ import (
 	"prutya/go-api-template/internal/config"
 	dbpkg "prutya/go-api-template/internal/db"
 	"prutya/go-api-template/internal/handlers/echo"
-	"prutya/go-api-template/internal/handlers/ts"
+	"prutya/go-api-template/internal/handlers/health"
 	handlerutils "prutya/go-api-template/internal/handlers/utils"
 	loggerpkg "prutya/go-api-template/internal/logger"
 )
@@ -86,7 +86,7 @@ func main() {
 	}))
 
 	// Initialize the routes
-	router.Get("/ts", ts.NewHandler())
+	router.Get("/health", health.NewHandler())
 	router.Post("/echo", echo.NewHandler())
 
 	// Prepare the server

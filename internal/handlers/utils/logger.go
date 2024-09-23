@@ -21,16 +21,17 @@ type ResponseInfoContextKey struct{}
 func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			requestId, ok := GetRequestId(r)
-
 			requestLogger := logger
 
-			if ok {
+			// Add request_id to the logger output
+			if requestId, requestIdOk := GetRequestId(r); requestIdOk {
 				requestLogger = requestLogger.With(zap.String("request_id", requestId))
 			}
 
 			responseInfo := new(ResponseInfo)
 
+			// Store the logger in the request context to potentially be used by
+			// handlers down the middleware stack
 			r = SetRequestLogger(r, logger)
 			r = SetRequestResponseInfo(r, responseInfo)
 
@@ -40,6 +41,7 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 				zap.String("url", r.URL.String()),
 			)
 
+			// Measure the request duration
 			start := time.Now()
 
 			next.ServeHTTP(w, r)
