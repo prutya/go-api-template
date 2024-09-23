@@ -2,24 +2,23 @@ package echo
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"prutya/go-api-template/internal/handlers/utils"
 )
 
-type request struct {
-	Name string `json:"name" validate:"required,gte=1,lte=255"`
+type Request struct {
+	Message string `json:"message" validate:"required,gte=2,lte=16"`
 }
 
-type response struct {
+type Response struct {
 	Message string `json:"message"`
 }
 
 func NewHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse the request
-		reqBody := request{}
+		reqBody := Request{}
 
 		decoder := json.NewDecoder(r.Body)
 		if err := decoder.Decode(&reqBody); err != nil {
@@ -33,7 +32,7 @@ func NewHandler() http.HandlerFunc {
 			return
 		}
 
-		responseBody := &response{Message: fmt.Sprintf("Hello, %s!", reqBody.Name)}
+		responseBody := &Response{Message: reqBody.Message}
 
 		utils.RenderJson(w, r, responseBody, http.StatusOK, nil)
 	}

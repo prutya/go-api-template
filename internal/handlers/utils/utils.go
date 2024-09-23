@@ -50,7 +50,7 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 		RenderJson(w, r, &ErrorResponse{
 			Error:   ErrCodeInvalidParams,
 			Details: details,
-		}, http.StatusBadRequest, nil)
+		}, http.StatusUnprocessableEntity, nil)
 
 		return
 	}
