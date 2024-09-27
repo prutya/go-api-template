@@ -2,6 +2,8 @@
 .git
 .dockerignore
 .gitignore
+.golangci.yml
 app.example.json
 app.json
 Dockerfile
+README.md
