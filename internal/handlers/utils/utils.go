@@ -118,5 +118,11 @@ func RenderRawJson(
 		responseInfo.HttpStatus = httpStatusCode
 	}
 
-	w.Write(json)
+	if _, err := w.Write(json); err != nil {
+		if logger, loggerOk := logger.GetContextLogger(r.Context()); loggerOk {
+			logger.Panic("Failed to write JSON", zap.Error(err))
+		} else {
+			panic(err)
+		}
+	}
 }
