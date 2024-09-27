@@ -17,14 +17,17 @@ var _ = Describe("Echo", func() {
 	var w *httptest.ResponseRecorder
 	var r *http.Request
 
+	JustBeforeEach(func() {
+		handler = echo.NewHandler()
+		w = httptest.NewRecorder()
+		r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
+
+		handler.ServeHTTP(w, r)
+	})
+
 	Context("when the request body is not a valid JSON", func() {
 		BeforeEach(func() {
 			requestBody = []byte(`yolo`)
-			handler = echo.NewHandler()
-			w = httptest.NewRecorder()
-			r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
-
-			handler.ServeHTTP(w, r)
 		})
 
 		It("returns a 400", func() {
@@ -44,11 +47,6 @@ var _ = Describe("Echo", func() {
 		Context("when the message is missing", func() {
 			BeforeEach(func() {
 				requestBody = []byte(`{}`)
-				handler = echo.NewHandler()
-				w = httptest.NewRecorder()
-				r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
-
-				handler.ServeHTTP(w, r)
 			})
 
 			It("returns a 422", func() {
@@ -74,11 +72,6 @@ var _ = Describe("Echo", func() {
 		Context("when the message is not a string", func() {
 			BeforeEach(func() {
 				requestBody = []byte(`{"message": 123}`)
-				handler = echo.NewHandler()
-				w = httptest.NewRecorder()
-				r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
-
-				handler.ServeHTTP(w, r)
 			})
 
 			It("returns a 400 with an invalid_json error", func() {
@@ -98,11 +91,6 @@ var _ = Describe("Echo", func() {
 			Context("when the message is too short", func() {
 				BeforeEach(func() {
 					requestBody = []byte(`{"message": "a"}`)
-					handler = echo.NewHandler()
-					w = httptest.NewRecorder()
-					r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
-
-					handler.ServeHTTP(w, r)
 				})
 
 				It("returns a 422", func() {
@@ -128,11 +116,6 @@ var _ = Describe("Echo", func() {
 			Context("when the message is too long", func() {
 				BeforeEach(func() {
 					requestBody = []byte(`{"message": "12345678901234567"}`)
-					handler = echo.NewHandler()
-					w = httptest.NewRecorder()
-					r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
-
-					handler.ServeHTTP(w, r)
 				})
 
 				It("returns a 422", func() {
