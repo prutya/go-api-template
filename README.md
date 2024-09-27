@@ -19,9 +19,10 @@ An opinionated DIY template for Golang JSON API applications
 - [x] ORM ([bun](https://github.com/uptrace/bun))
 - [x] Language-agnostic database migration toolkit ([dbmate](https://github.com/amacneil/dbmate))
 
-### Testing
+### Quality control
 - [x] Testing setup ([ginkgo](https://github.com/onsi/ginkgo))
-- [x] Github Actions test job
+- [x] Github Actions Test job
+- [x] Github Actions Lint job ([golangci-lint](https://github.com/golangci/golangci-lint)
 
 ### Misc
 - [x] Structured logger ([zap](https://github.com/uber-go/zap))
