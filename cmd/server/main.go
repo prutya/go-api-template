@@ -119,7 +119,6 @@ func main() {
 			cfg.ShutdownTimeout,
 		)
 
-		// If the server shuts down before the timeout... TODO: Add description
 		defer shutdownRelease()
 
 		// Shutdown the server with a timeout to let it complete the processing
