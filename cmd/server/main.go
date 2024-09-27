@@ -90,7 +90,11 @@ func main() {
 	router.Post("/echo", echo.NewHandler())
 
 	// Prepare the server
-	server := &http.Server{Addr: cfg.ListenAddr, Handler: router}
+	server := &http.Server{
+		Addr:              cfg.ListenAddr,
+		Handler:           router,
+		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+	}
 
 	// Prepare channels for shutdown signals
 	shutdownSignals := map[string]chan os.Signal{

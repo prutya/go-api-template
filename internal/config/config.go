@@ -19,6 +19,7 @@ type Config struct {
 	CorsMaxAge           time.Duration `mapstructure:"CORS_MAX_AGE"`
 	ShutdownTimeout      time.Duration `mapstructure:"SHUTDOWN_TIMEOUT"`
 	ListenAddr           string        `mapstructure:"LISTEN_ADDR"`
+	ReadHeaderTimeout    time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 }
 
 func Load() (*Config, error) {
@@ -40,6 +41,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("cors_max_age", 5*time.Minute)
 	viper.SetDefault("shutdown_timeout", 15*time.Second)
 	viper.SetDefault("listen_addr", ":3333")
+	viper.SetDefault("read_header_timeout", 2*time.Second)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err

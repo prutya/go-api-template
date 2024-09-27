@@ -15,5 +15,6 @@
   "cors_allow_credentials": false,
   "cors_max_age": "5m",
   "shutdown_timeout": "15s",
-  "listen_addr": ":3333"
+  "listen_addr": ":3333",
+  "read_header_timeout": "2s"
 }
