@@ -1,4 +1,10 @@
 services:
+  lint:
+    image: docker.io/golangci/golangci-lint:v1.61.0
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["golangci-lint", "run", "--verbose"]
   dbmate:
     image: docker.io/amacneil/dbmate:2.21.0
     environment:
