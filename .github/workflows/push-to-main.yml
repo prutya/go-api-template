@@ -23,24 +23,6 @@ jobs:
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: "./go.mod"
-      - name: Install packages
-        run: |
-          go mod download
-      - name: Install Ginkgo
-        run: |
-          go install github.com/onsi/ginkgo/v2/ginkgo@latest
-      - name: Start the database
-        run: |
-          docker compose up --detach postgres
-      - name: Run migrations
-        run: |
-          docker compose run --rm dbmate migrate
       - name: Run tests
-        env:
-          APP_DATABASE_URL: postgres://app_username:app_password@localhost:5432/app_database?sslmode=disable
         run: |
-          ginkgo -v -r ./...
+          docker compose run --rm test

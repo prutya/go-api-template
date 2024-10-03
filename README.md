@@ -66,7 +66,12 @@ go run cmd/server/main.go
 ## Running tests
 
 ```sh
-ginkgo -v -r ./...
+docker compose run --rm test
+```
+
+## Running the linter
+```sh
+docker compose run --rm lint
 ```
 
 ## Building the production image

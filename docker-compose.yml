@@ -1,41 +1,90 @@
-services:
-  lint:
-    image: docker.io/golangci/golangci-lint:v1.61.0
-    volumes:
-      - .:/app
-    working_dir: /app
-    command: ["golangci-lint", "run", "--verbose"]
-  dbmate:
+x-shared-configuration:
+
+  dbmate: &dbmate
     image: docker.io/amacneil/dbmate:2.21.0
-    environment:
-      DATABASE_URL: postgres://app_username:app_password@postgres:5432/app_database?sslmode=disable
     volumes:
-      - ./db:/db
-    networks:
-      - app_dev
-    depends_on:
-      postgres:
-        condition: service_healthy
-  postgres:
+      - "./db:/db"
+
+  postgres: &postgres
     image: docker.io/bitnami/postgresql:16.4.0-debian-12-r9
     environment:
       POSTGRESQL_USERNAME: app_username
       POSTGRESQL_PASSWORD: app_password
       POSTGRESQL_DATABASE: app_database
-    ports:
-      - 5432:5432
-    volumes:
-      - postgres_data:/bitnami/postgresql
-    networks:
-      - app_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d app_database"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+services:
+
+  dbmate:
+    <<: [*dbmate]
+    environment:
+      DATABASE_URL: postgres://app_username:app_password@postgres:5432/app_database?sslmode=disable
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    <<: [*postgres]
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/bitnami/postgresql
+    networks:
+      - app_dev
+
+  lint:
+    image: docker.io/golangci/golangci-lint:v1.61.0
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["golangci-lint", "run", "--verbose"]
+
+  test:
+    build:
+      target: test
+      context: "."
+    environment:
+      APP_DATABASE_URL: postgres://app_username:app_password@postgres_test:5432/app_database?sslmode=disable
+    volumes:
+      - .:/app
+    command: ["ginkgo", "-v", "-r", "./..."]
+    networks:
+      - app_test
+    depends_on:
+      dbmate_test_migrate:
+        condition: service_completed_successfully
+
+  dbmate_test_migrate:
+    <<: [*dbmate]
+    environment:
+      DATABASE_URL: postgres://app_username:app_password@postgres_test:5432/app_database?sslmode=disable
+    command: ["migrate"]
+    networks:
+      - app_test
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+
+  postgres_test:
+    <<: [*postgres]
+    volumes:
+      - postgres_test_data:/bitnami/postgresql
+    networks:
+      - app_test
+
 volumes:
   postgres_data: {}
+  postgres_test_data:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
 
 networks:
   app_dev: {}
+  app_test: {}

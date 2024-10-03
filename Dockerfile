@@ -1,12 +1,35 @@
-##### Production build #####
+##### Base #####
 
-FROM golang:1.23.1-bookworm AS build_production
+FROM golang:1.23.1-bookworm AS base
+
+
+
+##### Dependencies #####
+
+FROM base AS deps
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
 
 RUN go mod download
+
+
+
+##### Testing #####
+
+FROM deps AS test
+
+# Install Ginkgo
+RUN go install github.com/onsi/ginkgo/v2/ginkgo@latest
+
+
+
+##### Production build #####
+
+FROM deps AS build_production
+
+WORKDIR /app
 
 COPY . .
 
