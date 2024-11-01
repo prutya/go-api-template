@@ -66,12 +66,12 @@ go run cmd/server/main.go
 ## Running tests
 
 ```sh
-docker compose run --rm test
+docker compose run --build --rm test
 ```
 
 ## Running the linter
 ```sh
-docker compose run --rm lint
+docker compose run --build --rm lint
 ```
 
 ## Building the production image

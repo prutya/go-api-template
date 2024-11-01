@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.23.1-bookworm AS base
+FROM golang:1.23.2-bookworm AS base
 
 
 
