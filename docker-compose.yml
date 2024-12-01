@@ -1,12 +1,12 @@
 x-shared-configuration:
 
   dbmate: &dbmate
-    image: docker.io/amacneil/dbmate:2.21.0
+    image: docker.io/amacneil/dbmate:2.23.0
     volumes:
       - "./db:/db"
 
   postgres: &postgres
-    image: docker.io/bitnami/postgresql:16.4.0-debian-12-r9
+    image: bitnami/postgresql:17.2.0-debian-12-r1
     environment:
       POSTGRESQL_USERNAME: app_username
       POSTGRESQL_PASSWORD: app_password
@@ -39,7 +39,7 @@ services:
       - app_dev
 
   lint:
-    image: docker.io/golangci/golangci-lint:v1.61.0
+    image: docker.io/golangci/golangci-lint:v1.62.2
     volumes:
       - .:/app
     working_dir: /app
