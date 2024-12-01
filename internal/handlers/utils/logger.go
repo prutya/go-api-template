@@ -32,7 +32,7 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 
 			// Store the logger in the request context to potentially be used by
 			// handlers down the middleware stack
-			r = SetRequestLogger(r, logger)
+			r = SetRequestLogger(r, requestLogger)
 			r = SetRequestResponseInfo(r, responseInfo)
 
 			requestLogger.Info(
