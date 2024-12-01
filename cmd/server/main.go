@@ -19,6 +19,7 @@ import (
 	dbpkg "prutya/go-api-template/internal/db"
 	"prutya/go-api-template/internal/handlers/echo"
 	"prutya/go-api-template/internal/handlers/health"
+	"prutya/go-api-template/internal/handlers/utils"
 	handlerutils "prutya/go-api-template/internal/handlers/utils"
 	loggerpkg "prutya/go-api-template/internal/logger"
 )
@@ -84,6 +85,16 @@ func main() {
 		AllowCredentials: cfg.CorsAllowCredentials,
 		MaxAge:           int(cfg.CorsMaxAge.Seconds()),
 	}))
+
+	// Handle 404 Not Found
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		utils.RenderError(w, r, utils.ErrNotFound)
+	})
+
+	// Handle 405 Method Not Allowed
+	router.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		utils.RenderError(w, r, utils.ErrMethodNotAllowed)
+	})
 
 	// Initialize the routes
 	router.Get("/health", health.NewHandler())

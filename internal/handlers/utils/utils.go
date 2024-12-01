@@ -23,6 +23,8 @@ const ContentTypeJson = "application/json"
 var HeaderContentType = http.CanonicalHeaderKey("Content-Type")
 var HeaderContentLength = http.CanonicalHeaderKey("Content-Length")
 
+var ErrNotFound = NewServerError(ErrCodeNotFound, http.StatusNotFound)
+var ErrMethodNotAllowed = NewServerError(ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
 var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
 
 func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
