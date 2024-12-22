@@ -106,7 +106,10 @@ func main() {
 	server := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           router,
+		ReadTimeout:       cfg.ReadTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
 	}
 
 	// Prepare channels for shutdown signals
