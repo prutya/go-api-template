@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	loggerpkg "prutya/go-api-template/internal/logger"
+	internal_logger "prutya/go-api-template/internal/logger"
 )
 
 type QueryHook struct {
@@ -24,7 +24,7 @@ func (qh QueryHook) BeforeQuery(ctx context.Context, event *bun.QueryEvent) cont
 }
 
 func (qh QueryHook) AfterQuery(ctx context.Context, event *bun.QueryEvent) {
-	logger, ok := loggerpkg.GetContextLogger(ctx)
+	logger, ok := internal_logger.GetContextLogger(ctx)
 	if !ok {
 		fmt.Println("WARN: Database logger is not configured")
 		return
@@ -34,7 +34,7 @@ func (qh QueryHook) AfterQuery(ctx context.Context, event *bun.QueryEvent) {
 	query := event.Query
 
 	// Redact secrets provided in context
-	if redactStrings, _ := loggerpkg.GetContextRedactedSecrets(ctx); ok {
+	if redactStrings, _ := internal_logger.GetContextRedactedSecrets(ctx); ok {
 		for _, str := range redactStrings {
 			escapedString := EscapeDbString(event.DB, str)
 			query = strings.ReplaceAll(query, escapedString, "'[REDACTED]'")

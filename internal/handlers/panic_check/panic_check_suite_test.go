@@ -1,4 +1,4 @@
-package paniccheck_test
+package panic_check_test
 
 import (
 	"testing"

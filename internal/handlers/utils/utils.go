@@ -26,6 +26,7 @@ var HeaderContentLength = http.CanonicalHeaderKey("Content-Length")
 var ErrNotFound = NewServerError(ErrCodeNotFound, http.StatusNotFound)
 var ErrMethodNotAllowed = NewServerError(ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
 var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
+var ErrTimeout = NewServerError(ErrCodeTimeout, http.StatusGatewayTimeout)
 
 func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
 	RenderError(w, r, ErrInvalidJson)

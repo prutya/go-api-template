@@ -10,19 +10,20 @@ import (
 	"syscall"
 
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
-	dbpkg "prutya/go-api-template/internal/db"
+	internal_db "prutya/go-api-template/internal/db"
 	"prutya/go-api-template/internal/handlers/echo"
 	"prutya/go-api-template/internal/handlers/health"
-	"prutya/go-api-template/internal/handlers/paniccheck"
+	"prutya/go-api-template/internal/handlers/panic_check"
+	"prutya/go-api-template/internal/handlers/timeout_check"
 	"prutya/go-api-template/internal/handlers/utils"
-	handlerutils "prutya/go-api-template/internal/handlers/utils"
-	loggerpkg "prutya/go-api-template/internal/logger"
+	internal_handler_utils "prutya/go-api-template/internal/handlers/utils"
+	internal_logger "prutya/go-api-template/internal/logger"
 )
 
 func main() {
@@ -33,17 +34,17 @@ func main() {
 	}
 
 	// Initialize the logger
-	logger, err := loggerpkg.New(cfg.LogLevel, cfg.LogTimeFormat)
+	logger, err := internal_logger.New(cfg.LogLevel, cfg.LogTimeFormat)
 	if err != nil {
 		panic(err)
 	}
 	logger.Info("Logger OK")
 
 	// Initialize the main app context
-	ctx := context.WithValue(context.Background(), loggerpkg.LoggerContextKey{}, logger)
+	ctx := context.WithValue(context.Background(), internal_logger.LoggerContextKey{}, logger)
 
 	// Initialize the database connection
-	db := dbpkg.New(cfg.DatabaseUrl)
+	db := internal_db.New(cfg.DatabaseUrl)
 
 	// Smoke-test the database connection
 	if err := db.PingContext(ctx); err == nil {
@@ -56,7 +57,7 @@ func main() {
 	router := chi.NewRouter()
 
 	// Initialize the Request ID middleware
-	router.Use(handlerutils.NewRequestIDMiddleware(func(r *http.Request) (string, error) {
+	router.Use(internal_handler_utils.NewRequestIDMiddleware(func(r *http.Request) (string, error) {
 		val, err := uuid.NewRandom()
 		if err != nil {
 			return "", err
@@ -66,16 +67,16 @@ func main() {
 	}))
 
 	// Initialize the Real IP middleware
-	router.Use(chimiddleware.RealIP)
+	router.Use(middleware.RealIP)
 
 	// Initialize the Logger middleware
-	router.Use(handlerutils.NewLoggerMiddleware(logger))
+	router.Use(internal_handler_utils.NewLoggerMiddleware(logger))
 
 	// Initialize the Recover middleware (to handle panics)
-	router.Use(handlerutils.NewRecoverMiddleware())
+	router.Use(internal_handler_utils.NewRecoverMiddleware())
 
 	// Initialize the Timeout middleware
-	router.Use(chimiddleware.Timeout(cfg.RequestTimeout))
+	router.Use(internal_handler_utils.NewTimeoutMiddleware(cfg.RequestTimeout))
 
 	// Initialize the CORS middleware
 	router.Use(cors.Handler(cors.Options{
@@ -100,7 +101,8 @@ func main() {
 	// Initialize the routes
 	router.Get("/health", health.NewHandler())
 	router.Post("/echo", echo.NewHandler())
-	router.Get("/paniccheck", paniccheck.NewHandler())
+	router.Get("/panic-check", panic_check.NewHandler())
+	router.Get("/timeout-check", timeout_check.NewHandler())
 
 	// Prepare the server
 	server := &http.Server{

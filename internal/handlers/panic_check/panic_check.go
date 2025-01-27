@@ -1,4 +1,4 @@
-package paniccheck
+package panic_check
 
 import (
 	"net/http"
