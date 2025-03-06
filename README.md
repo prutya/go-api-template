@@ -2,6 +2,8 @@
 
 An opinionated DIY template for Golang JSON API applications
 
+![Build status](https://github.com/prutya/go-api-template/actions/workflows/push-to-main.yml/badge.svg)
+
 ## What's in the box?
 
 ### Server
