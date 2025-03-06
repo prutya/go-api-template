@@ -39,7 +39,7 @@ services:
       - app_dev
 
   lint:
-    image: docker.io/golangci/golangci-lint:v1.62.2
+    image: docker.io/golangci/golangci-lint:v1.64.6
     volumes:
       - .:/app
     working_dir: /app
