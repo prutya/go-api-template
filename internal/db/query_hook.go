@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -24,17 +23,13 @@ func (qh QueryHook) BeforeQuery(ctx context.Context, event *bun.QueryEvent) cont
 }
 
 func (qh QueryHook) AfterQuery(ctx context.Context, event *bun.QueryEvent) {
-	logger, ok := internal_logger.GetContextLogger(ctx)
-	if !ok {
-		fmt.Println("WARN: Database logger is not configured")
-		return
-	}
+	logger := internal_logger.MustFromContext(ctx)
 
 	queryDuration := time.Since(event.StartTime)
 	query := event.Query
 
 	// Redact secrets provided in context
-	if redactStrings, _ := internal_logger.GetContextRedactedSecrets(ctx); ok {
+	if redactStrings, ok := internal_logger.GetContextRedactedSecrets(ctx); ok {
 		for _, str := range redactStrings {
 			escapedString := EscapeDbString(event.DB, str)
 			query = strings.ReplaceAll(query, escapedString, "'[REDACTED]'")

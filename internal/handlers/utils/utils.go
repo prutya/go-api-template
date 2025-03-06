@@ -82,9 +82,8 @@ func RenderJson(
 	json, marshalErr := json.Marshal(object)
 
 	if marshalErr != nil {
-		if logger, loggerOk := logger.GetContextLogger(r.Context()); loggerOk {
-			logger.Error("Failed to render an object as JSON", zap.Any("object", object))
-		}
+		logger := logger.MustFromContext(r.Context())
+		logger.Error("Failed to render an object as JSON", zap.Any("object", object))
 
 		RenderRawJson(
 			w,
@@ -122,10 +121,7 @@ func RenderRawJson(
 	}
 
 	if _, err := w.Write(json); err != nil {
-		if logger, loggerOk := logger.GetContextLogger(r.Context()); loggerOk {
-			logger.Panic("Failed to write JSON", zap.Error(err))
-		} else {
-			panic(err)
-		}
+		logger := logger.MustFromContext(r.Context())
+		logger.Panic("Failed to write JSON", zap.Error(err))
 	}
 }

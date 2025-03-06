@@ -2,13 +2,23 @@ package logger
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type LoggerContextKey struct{}
+
+var loggerContextKey = LoggerContextKey{}
+
+var ErrNoLoggerInContext = errors.New("no logger in context")
+
 type LogsRedactKey struct{}
+
+var logsRedactKey = LogsRedactKey{}
+
+var ErrNoRedactedSecretsInContext = errors.New("no redacted secrets in context")
 
 func New(level string, timeFormat string) (*zap.Logger, error) {
 	loggerCfg := zap.NewProductionConfig()
@@ -37,18 +47,32 @@ func New(level string, timeFormat string) (*zap.Logger, error) {
 	return logger, nil
 }
 
-func SetContextLogger(c context.Context, logger *zap.Logger) context.Context {
-	return context.WithValue(c, LoggerContextKey{}, logger)
+func NewContext(c context.Context, logger *zap.Logger) context.Context {
+	return context.WithValue(c, loggerContextKey, logger)
 }
 
-func GetContextLogger(c context.Context) (*zap.Logger, bool) {
-	logger, ok := c.Value(LoggerContextKey{}).(*zap.Logger)
+func MustFromContext(c context.Context) *zap.Logger {
+	val, err := FromContext(c)
 
-	return logger, ok
+	if err != nil {
+		panic(err)
+	}
+
+	return val
 }
 
-func ContextWithRedactedSecret(ctx context.Context, secret string) context.Context {
-	existingSecrets, ok := ctx.Value(LogsRedactKey{}).([]string)
+func FromContext(c context.Context) (*zap.Logger, error) {
+	val, ok := c.Value(loggerContextKey).(*zap.Logger)
+
+	if !ok {
+		return nil, ErrNoLoggerInContext
+	}
+
+	return val, nil
+}
+
+func NewContextWithRedactedSecret(ctx context.Context, secret string) context.Context {
+	existingSecrets, ok := ctx.Value(logsRedactKey).([]string)
 
 	if ok {
 		existingSecrets = append(existingSecrets, secret)
@@ -56,11 +80,11 @@ func ContextWithRedactedSecret(ctx context.Context, secret string) context.Conte
 		existingSecrets = []string{secret}
 	}
 
-	return context.WithValue(ctx, LogsRedactKey{}, existingSecrets)
+	return context.WithValue(ctx, logsRedactKey, existingSecrets)
 }
 
 func GetContextRedactedSecrets(ctx context.Context) ([]string, bool) {
-	redactStrings, ok := ctx.Value(LogsRedactKey{}).([]string)
+	redactStrings, ok := ctx.Value(logsRedactKey).([]string)
 
 	return redactStrings, ok
 }

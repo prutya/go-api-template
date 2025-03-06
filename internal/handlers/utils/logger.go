@@ -70,15 +70,9 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 }
 
 func SetRequestLogger(r *http.Request, logger *zap.Logger) *http.Request {
-	ctxWithLogger := internallogger.SetContextLogger(r.Context(), logger)
+	ctxWithLogger := internallogger.NewContext(r.Context(), logger)
 
 	return r.WithContext(ctxWithLogger)
-}
-
-func GetRequestLogger(r *http.Request) (*zap.Logger, bool) {
-	logger, ok := internallogger.GetContextLogger(r.Context())
-
-	return logger, ok
 }
 
 func SetRequestResponseInfo(r *http.Request, responseInfo *ResponseInfo) *http.Request {

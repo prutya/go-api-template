@@ -2,6 +2,8 @@ package utils
 
 import (
 	"net/http"
+
+	internal_logger "prutya/go-api-template/internal/logger"
 )
 
 func NewRecoverMiddleware() func(next http.Handler) http.Handler {
@@ -20,10 +22,8 @@ func NewRecoverMiddleware() func(next http.Handler) http.Handler {
 					panic(rvr)
 				}
 
-				logger, loggerOk := GetRequestLogger(r)
-				if loggerOk {
-					logger.Error("Recovered from panic")
-				}
+				logger := internal_logger.MustFromContext(r.Context())
+				logger.Error("Recovered from panic")
 
 				RenderError(w, r, NewServerError(ErrCodeInternal, http.StatusInternalServerError))
 			}()
