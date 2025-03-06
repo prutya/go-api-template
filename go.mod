@@ -1,6 +1,6 @@
 module prutya/go-api-template
 
-go 1.23.3
+go 1.24.1
 
 require (
 	github.com/go-chi/chi/v5 v5.2.0
