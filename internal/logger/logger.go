@@ -8,9 +8,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type LoggerContextKey struct{}
+type LoggerContextKeyType struct{}
 
-var loggerContextKey = LoggerContextKey{}
+var loggerContextKey = LoggerContextKeyType{}
 
 var ErrNoLoggerInContext = errors.New("no logger in context")
 
