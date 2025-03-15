@@ -69,6 +69,9 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 		return
 	}
 
+	logger := logger.MustFromContext(r.Context())
+	logger.Error("Internal server error", zap.Error(err))
+
 	RenderJson(w, r, &ErrorResponse{Error: ErrCodeInternal}, http.StatusInternalServerError, nil)
 }
 

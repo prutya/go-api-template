@@ -17,6 +17,16 @@ x-shared-configuration:
       timeout: 5s
       retries: 5
 
+  redis: &redis
+    image: bitnami/redis:7.4.2-debian-12-r5
+    environment:
+      REDIS_PASSWORD: app_redis_password
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 services:
 
   dbmate:
@@ -35,6 +45,15 @@ services:
       - 5432:5432
     volumes:
       - postgres_data:/bitnami/postgresql
+    networks:
+      - app_dev
+
+  redis:
+    <<: [*redis]
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/bitnami/redis/data
     networks:
       - app_dev
 
@@ -84,6 +103,7 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+  redis_data: {}
 
 networks:
   app_dev: {}

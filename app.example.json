@@ -19,5 +19,7 @@
   "read_timeout": "0s",
   "write_timeout": "0s",
   "read_header_timeout": "10s",
-  "idle_timeout": "0s"
+  "idle_timeout": "0s",
+  "tasks_redis_host": "localhost:6379",
+  "tasks_redis_password": "app_redis_password"
 }

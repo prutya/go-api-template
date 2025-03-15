@@ -8,7 +8,6 @@ import (
 	"prutya/go-api-template/internal/config"
 	db "prutya/go-api-template/internal/db"
 	loggerpkg "prutya/go-api-template/internal/logger"
-	"prutya/go-api-template/internal/server"
 	"prutya/go-api-template/internal/tasks"
 )
 
@@ -40,24 +39,18 @@ func main() {
 		logger.Fatal("Failed to connect to the database", zap.Error(err))
 	}
 
-	// Background tasks
-	tasksClient := tasks.NewClient(cfg)
-	defer tasksClient.Close()
+	// Background tasks server
+	server := tasks.NewServer(ctx, cfg, logger)
 
-	// Smoke-test the background tasks client
-	if err := tasksClient.Ping(); err == nil {
-		logger.Info("Background tasks OK")
+	// Smoke-test the background tasks server
+	if err := server.Ping(); err == nil {
+		logger.Info("Background tasks server OK")
 	} else {
-		logger.Fatal("Failed to connect to the background tasks", zap.Error(err))
+		logger.Fatal("Failed to connect to the background tasks server", zap.Error(err))
 	}
 
-	// Server
-	router := server.NewRouter(cfg, logger, tasksClient)
-	server := server.NewServer(cfg, logger, router)
-
-	if err := server.Start(); err != nil {
-		logger.Fatal("Server error", zap.Error(err))
+	// Run the background tasks server
+	if err := server.Run(); err != nil {
+		logger.Fatal("Failed to run the background tasks server", zap.Error(err))
 	}
-
-	logger.Info("Bye!")
 }

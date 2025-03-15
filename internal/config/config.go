@@ -23,6 +23,8 @@ type Config struct {
 	WriteTimeout         time.Duration `mapstructure:"WRITE_TIMEOUT"`
 	ReadHeaderTimeout    time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 	IdleTimeout          time.Duration `mapstructure:"IDLE_TIMEOUT"`
+	TasksRedisHost       string        `mapstructure:"TASKS_REDIS_HOST"`
+	TasksRedisPassword   string        `mapstructure:"TASKS_REDIS_PASSWORD"`
 }
 
 func Load() (*Config, error) {

@@ -21,6 +21,10 @@ An opinionated DIY template for Golang JSON API applications
 - [x] ORM ([bun](https://github.com/uptrace/bun))
 - [x] Language-agnostic database migration toolkit ([dbmate](https://github.com/amacneil/dbmate))
 
+### Background jobs processing
+- [x] [Asynq](https://github.com/hibiken/asynq) setup
+- [ ] TODO: Monitoring job via [Asyncmon](https://github.com/hibiken/asynqmon) Web UI
+
 ### Quality control
 - [x] Testing setup ([ginkgo](https://github.com/onsi/ginkgo))
 - [x] Github Actions Test job
@@ -64,6 +68,9 @@ docker compose run --rm dbmate migrate
 ```sh
 go run cmd/server/main.go
 ```
+
+### Start a worker
+TODO
 
 ## Running tests
 

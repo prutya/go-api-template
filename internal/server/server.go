@@ -19,7 +19,7 @@ type Server struct {
 	logger     *zap.Logger
 }
 
-func NewServer(config *config.Config, router *Router, logger *zap.Logger) *Server {
+func NewServer(config *config.Config, logger *zap.Logger, router *Router) *Server {
 	httpServer := &http.Server{
 		Addr:              config.ListenAddr,
 		Handler:           router.mux,
