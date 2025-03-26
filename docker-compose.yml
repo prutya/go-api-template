@@ -38,6 +38,17 @@ services:
     networks:
       - app_dev
 
+  psql:
+    <<: [*postgres]
+    volumes:
+      - "./db:/db"
+    entrypoint: ["psql", "postgres://app_username:app_password@postgres:5432/app_database?sslmode=disable"]
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   lint:
     image: docker.io/golangci/golangci-lint:v1.64.6
     volumes:

@@ -23,11 +23,6 @@ const ContentTypeJson = "application/json"
 var HeaderContentType = http.CanonicalHeaderKey("Content-Type")
 var HeaderContentLength = http.CanonicalHeaderKey("Content-Length")
 
-var ErrNotFound = NewServerError(ErrCodeNotFound, http.StatusNotFound)
-var ErrMethodNotAllowed = NewServerError(ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
-var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
-var ErrTimeout = NewServerError(ErrCodeTimeout, http.StatusGatewayTimeout)
-
 func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
 	RenderError(w, r, ErrInvalidJson)
 }
@@ -123,5 +118,25 @@ func RenderRawJson(
 	if _, err := w.Write(json); err != nil {
 		logger := logger.MustFromContext(r.Context())
 		logger.Panic("Failed to write JSON", zap.Error(err))
+	}
+}
+
+func RenderNoContent(
+	w http.ResponseWriter,
+	r *http.Request,
+	additionalHeaders map[string]string,
+) {
+	w.Header().Set(HeaderContentType, ContentTypeText)
+	w.Header().Set(HeaderContentLength, "0")
+
+	for headerName, headerValue := range additionalHeaders {
+		w.Header().Set(headerName, headerValue)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
+	// Write the response status code in logs
+	if responseInfo, hasResponseInfo := GetRequestResponseInfo(r); hasResponseInfo {
+		responseInfo.HttpStatus = http.StatusNoContent
 	}
 }

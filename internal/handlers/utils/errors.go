@@ -1,5 +1,21 @@
 package utils
 
+import "net/http"
+
+const ErrCodeNotFound = "not_found"
+const ErrCodeMethodNotAllowed = "method_not_allowed"
+const ErrCodeInternal = "internal_error"
+const ErrCodeInvalidJson = "invalid_json"
+const ErrCodeInvalidParams = "invalid_params"
+const ErrCodeTimeout = "timeout"
+const ErrCodeUnauthorized = "unauthorized"
+
+var ErrNotFound = NewServerError(ErrCodeNotFound, http.StatusNotFound)
+var ErrMethodNotAllowed = NewServerError(ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
+var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
+var ErrTimeout = NewServerError(ErrCodeTimeout, http.StatusGatewayTimeout)
+var ErrUnauthorized = NewServerError(ErrCodeUnauthorized, http.StatusUnauthorized)
+
 type ServerError struct {
 	HttpStatusCode int
 	Code           string

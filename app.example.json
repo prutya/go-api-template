@@ -19,5 +19,8 @@
   "read_timeout": "0s",
   "write_timeout": "0s",
   "read_header_timeout": "10s",
-  "idle_timeout": "0s"
+  "idle_timeout": "0s",
+  "timing_attack_delay": "500ms",
+  "authentication_session_token_ttl": "24h",
+  "authentication_session_token_secret_length": 32
 }

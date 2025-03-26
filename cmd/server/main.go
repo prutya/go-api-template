@@ -8,7 +8,9 @@ import (
 	"prutya/go-api-template/internal/config"
 	db "prutya/go-api-template/internal/db"
 	loggerpkg "prutya/go-api-template/internal/logger"
+	"prutya/go-api-template/internal/repo"
 	"prutya/go-api-template/internal/server"
+	"prutya/go-api-template/internal/services/authentication_service"
 )
 
 func main() {
@@ -39,8 +41,15 @@ func main() {
 		logger.Fatal("Failed to connect to the database", zap.Error(err))
 	}
 
+	// Repositories
+	userRepo := repo.NewUserRepo(db)
+	sessionRepo := repo.NewSessionRepo(db)
+
+	// Services
+	authenticationService := authentication_service.NewAuthenticationService(cfg, userRepo, sessionRepo)
+
 	// Server
-	router := server.NewRouter(cfg, logger)
+	router := server.NewRouter(cfg, logger, authenticationService)
 	server := server.NewServer(cfg, router, logger)
 
 	if err := server.Start(); err != nil {

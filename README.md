@@ -16,9 +16,14 @@ An opinionated DIY template for Golang JSON API applications
 - [x] Compatibility with standard library (net/http) middleware
 - [x] Error handling
 - [x] Healthcheck endpoint `/health`
+- [x] Authentication middleware
+- [x] Sign In endpoint – `POST /sessions`
+- [x] Sign Out endpoint – `DELETE /sessions/current`
+- [x] Get current User endpoint – `GET /users/current`
 
 ### Database
 - [x] ORM ([bun](https://github.com/uptrace/bun))
+- [x] Authentication tables (users and sessions)
 - [x] Language-agnostic database migration toolkit ([dbmate](https://github.com/amacneil/dbmate))
 
 ### Quality control
@@ -59,10 +64,31 @@ docker compose up --detach postgres
 docker compose run --rm dbmate migrate
 ```
 
+### Seed the database
+
+```sh
+docker compose run --rm psql --echo-all --file /db/seed.sql
+```
+
 ### Start the app
 
 ```sh
 go run cmd/server/main.go
+```
+
+### Recreating the database
+```sh
+# Drop the database
+docker compose run --rm dbmate drop
+
+# Create the database and run migrations
+docker compose run --rm dbmate up
+```
+
+## Building the production image
+
+```sh
+docker build . --tag my-counters-api:latest
 ```
 
 ## Running tests

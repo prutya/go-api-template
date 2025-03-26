@@ -13,15 +13,22 @@ import (
 	"prutya/go-api-template/internal/handlers/echo"
 	"prutya/go-api-template/internal/handlers/health"
 	"prutya/go-api-template/internal/handlers/panic_check"
+	"prutya/go-api-template/internal/handlers/sessions"
 	"prutya/go-api-template/internal/handlers/timeout_check"
+	"prutya/go-api-template/internal/handlers/users"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/services/authentication_service"
 )
 
 type Router struct {
 	mux *chi.Mux
 }
 
-func NewRouter(config *config.Config, logger *zap.Logger) *Router {
+func NewRouter(
+	config *config.Config,
+	logger *zap.Logger,
+	authenticationService authentication_service.AuthenticationService,
+) *Router {
 	mux := chi.NewRouter()
 
 	// Middleware
@@ -49,11 +56,16 @@ func NewRouter(config *config.Config, logger *zap.Logger) *Router {
 		utils.RenderError(w, r, utils.ErrMethodNotAllowed)
 	})
 
+	// Route-specific middleware
+	authenticationMiddleware := utils.NewAuthenticationMiddleware(authenticationService)
+
 	// API routes
-	mux.Get("/health", health.NewHandler())
 	mux.Post("/echo", echo.NewHandler())
+	mux.Get("/health", health.NewHandler())
 	mux.Get("/panic-check", panic_check.NewHandler())
+	mux.Mount("/sessions", newSessionsMux(config, authenticationMiddleware, authenticationService))
 	mux.Get("/timeout-check", timeout_check.NewHandler())
+	mux.Mount("/users", newUsersMux(config, authenticationMiddleware))
 
 	return &Router{mux: mux}
 }
@@ -65,4 +77,49 @@ func generateRequestID(r *http.Request) (string, error) {
 	}
 
 	return val.String(), nil
+}
+
+func newSessionsMux(
+	config *config.Config,
+	authenticationMiddleware func(next http.Handler) http.Handler,
+	authenticationService authentication_service.AuthenticationService,
+) *chi.Mux {
+	m := chi.NewRouter()
+
+	m.Post("/", sessions.NewCreateHandler(config, authenticationService))
+	m.Mount("/current", newSessionsCurrentMux(config, authenticationMiddleware, authenticationService))
+
+	return m
+}
+
+func newSessionsCurrentMux(
+	config *config.Config,
+	authenticationMiddleware func(next http.Handler) http.Handler,
+	authenticationService authentication_service.AuthenticationService,
+) *chi.Mux {
+	m := chi.NewRouter()
+
+	m.Use(authenticationMiddleware)
+
+	m.Delete("/", sessions.NewDeleteCurrentHandler(config, authenticationService))
+
+	return m
+}
+
+func newUsersMux(config *config.Config, authenticationMiddleware func(next http.Handler) http.Handler) *chi.Mux {
+	m := chi.NewRouter()
+
+	m.Mount("/current", newUsersCurrentMux(config, authenticationMiddleware))
+
+	return m
+}
+
+func newUsersCurrentMux(config *config.Config, authenticationMiddleware func(next http.Handler) http.Handler) *chi.Mux {
+	m := chi.NewRouter()
+
+	m.Use(authenticationMiddleware)
+
+	m.Get("/", users.NewShowCurrentHandler(config))
+
+	return m
 }

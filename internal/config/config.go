@@ -23,6 +23,10 @@ type Config struct {
 	WriteTimeout         time.Duration `mapstructure:"WRITE_TIMEOUT"`
 	ReadHeaderTimeout    time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 	IdleTimeout          time.Duration `mapstructure:"IDLE_TIMEOUT"`
+	TimingAttackDelay    time.Duration `mapstructure:"TIMING_ATTACK_DELAY"`
+
+	AuthenticationSessionTokenTTL          time.Duration `mapstructure:"AUTHENTICATION_SESSION_TOKEN_TTL"`
+	AuthenticationSessionTokenSecretLength int           `mapstructure:"AUTHENTICATION_SESSION_TOKEN_SECRET_LENGTH"`
 }
 
 func Load() (*Config, error) {
@@ -48,6 +52,10 @@ func Load() (*Config, error) {
 	viper.SetDefault("write_timeout", 0)
 	viper.SetDefault("read_header_timeout", 10*time.Second)
 	viper.SetDefault("idle_timeout", 0*time.Second)
+	viper.SetDefault("timing_attack_delay", 500*time.Millisecond)
+
+	viper.SetDefault("authentication_session_token_ttl", 24*time.Hour)
+	viper.SetDefault("authentication_session_token_secret_length", 32)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
