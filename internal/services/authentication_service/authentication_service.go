@@ -54,7 +54,7 @@ func NewAuthenticationService(config *config.Config, userRepo repo.UserRepo, ses
 	}
 }
 
-func (s *authenticationService) Login(ctx context.Context, email string, password string) (sessionToken string, err error) {
+func (s *authenticationService) Login(ctx context.Context, email string, password string) (string, error) {
 	normalizedEmail := strings.ToLower(email)
 
 	user, err := s.userRepo.FindByEmail(ctx, normalizedEmail)
@@ -122,20 +122,20 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	return tokenString, nil
 }
 
-func (s *authenticationService) Logout(ctx context.Context, sessionId string) (err error) {
+func (s *authenticationService) Logout(ctx context.Context, sessionId string) error {
 	return s.sessionRepo.Terminate(ctx, sessionId)
 }
 
 func (s *authenticationService) Authenticate(
 	ctx context.Context,
 	sessionToken string,
-) (user *models.User, session *models.Session, err error) {
+) (*models.User, *models.Session, error) {
 	logger := logger.MustFromContext(ctx)
 
 	var userSession *models.Session
 
 	// Parse the token
-	parsedToken, err := jwt.ParseWithClaims(sessionToken, &SessionTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(sessionToken, &SessionTokenClaims{}, func(token *jwt.Token) (any, error) {
 		// Find the session by JTI
 		claims, ok := token.Claims.(*SessionTokenClaims)
 		if !ok {
@@ -182,7 +182,7 @@ func (s *authenticationService) Authenticate(
 	}
 
 	// Find the user
-	user, err = s.userRepo.FindById(ctx, claims.UserID)
+	user, err := s.userRepo.FindById(ctx, claims.UserID)
 	if err != nil {
 		return nil, nil, ErrUserNotFound
 	}
