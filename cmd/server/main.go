@@ -11,6 +11,7 @@ import (
 	"prutya/go-api-template/internal/repo"
 	"prutya/go-api-template/internal/server"
 	"prutya/go-api-template/internal/services/authentication_service"
+	"prutya/go-api-template/internal/services/user_service"
 )
 
 func main() {
@@ -44,12 +45,21 @@ func main() {
 	// Repositories
 	userRepo := repo.NewUserRepo(db)
 	sessionRepo := repo.NewSessionRepo(db)
+	refreshTokenRepo := repo.NewRefreshTokenRepo(db)
+	accessTokenRepo := repo.NewAccessTokenRepo(db)
 
 	// Services
-	authenticationService := authentication_service.NewAuthenticationService(cfg, userRepo, sessionRepo)
+	authenticationService := authentication_service.NewAuthenticationService(
+		cfg,
+		userRepo,
+		sessionRepo,
+		refreshTokenRepo,
+		accessTokenRepo,
+	)
+	userService := user_service.NewUserService(userRepo)
 
 	// Server
-	router := server.NewRouter(cfg, logger, authenticationService)
+	router := server.NewRouter(cfg, logger, authenticationService, userService)
 	server := server.NewServer(cfg, router, logger)
 
 	if err := server.Start(); err != nil {

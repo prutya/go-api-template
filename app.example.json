@@ -12,7 +12,7 @@
     "X-CSRF-Token"
   ],
   "cors_exposed_headers": ["Link"],
-  "cors_allow_credentials": false,
+  "cors_allow_credentials": true,
   "cors_max_age": "5m",
   "shutdown_timeout": "15s",
   "listen_addr": ":3333",
@@ -20,7 +20,16 @@
   "write_timeout": "0s",
   "read_header_timeout": "10s",
   "idle_timeout": "0s",
-  "timing_attack_delay": "500ms",
-  "authentication_session_token_ttl": "24h",
-  "authentication_session_token_secret_length": 32
+  "authentication_timing_attack_delay": "500ms",
+  "authentication_refresh_token_ttl": "36h",
+  "authentication_refresh_token_secret_length": 32,
+  "authentication_refresh_token_leeway": "0s",
+  "authentication_refresh_token_cookie_name": "refresh_token",
+  "authentication_refresh_token_cookie_domain": "",
+  "authentication_refresh_token_cookie_path": "/sessions/refresh",
+  "authentication_refresh_token_cookie_secure": true,
+  "authentication_refresh_token_cookie_http_only": true,
+  "authentication_refresh_token_cookie_same_site": "strict",
+  "authentication_access_token_ttl": "15m",
+  "authentication_access_token_secret_length": 32
 }

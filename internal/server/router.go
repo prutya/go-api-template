@@ -18,6 +18,7 @@ import (
 	"prutya/go-api-template/internal/handlers/users"
 	"prutya/go-api-template/internal/handlers/utils"
 	"prutya/go-api-template/internal/services/authentication_service"
+	"prutya/go-api-template/internal/services/user_service"
 )
 
 type Router struct {
@@ -28,6 +29,7 @@ func NewRouter(
 	config *config.Config,
 	logger *zap.Logger,
 	authenticationService authentication_service.AuthenticationService,
+	userService user_service.UserService,
 ) *Router {
 	mux := chi.NewRouter()
 
@@ -65,7 +67,7 @@ func NewRouter(
 	mux.Get("/panic-check", panic_check.NewHandler())
 	mux.Mount("/sessions", newSessionsMux(config, authenticationMiddleware, authenticationService))
 	mux.Get("/timeout-check", timeout_check.NewHandler())
-	mux.Mount("/users", newUsersMux(config, authenticationMiddleware))
+	mux.Mount("/users", newUsersMux(config, authenticationMiddleware, userService))
 
 	return &Router{mux: mux}
 }
@@ -87,6 +89,7 @@ func newSessionsMux(
 	m := chi.NewRouter()
 
 	m.Post("/", sessions.NewCreateHandler(config, authenticationService))
+	m.Post("/refresh", sessions.NewRefreshHandler(config, authenticationService))
 	m.Mount("/current", newSessionsCurrentMux(config, authenticationMiddleware, authenticationService))
 
 	return m
@@ -106,20 +109,28 @@ func newSessionsCurrentMux(
 	return m
 }
 
-func newUsersMux(config *config.Config, authenticationMiddleware func(next http.Handler) http.Handler) *chi.Mux {
+func newUsersMux(
+	config *config.Config,
+	authenticationMiddleware func(next http.Handler) http.Handler,
+	userService user_service.UserService,
+) *chi.Mux {
 	m := chi.NewRouter()
 
-	m.Mount("/current", newUsersCurrentMux(config, authenticationMiddleware))
+	m.Mount("/current", newUsersCurrentMux(config, authenticationMiddleware, userService))
 
 	return m
 }
 
-func newUsersCurrentMux(config *config.Config, authenticationMiddleware func(next http.Handler) http.Handler) *chi.Mux {
+func newUsersCurrentMux(
+	config *config.Config,
+	authenticationMiddleware func(next http.Handler) http.Handler,
+	userService user_service.UserService,
+) *chi.Mux {
 	m := chi.NewRouter()
 
 	m.Use(authenticationMiddleware)
 
-	m.Get("/", users.NewShowCurrentHandler(config))
+	m.Get("/", users.NewShowCurrentHandler(config, userService))
 
 	return m
 }

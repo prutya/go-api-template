@@ -6,7 +6,7 @@ An opinionated DIY template for Golang JSON API applications
 
 ## What's in the box?
 
-### Server
+### App
 - [x] Router ([chi](https://github.com/go-chi/chi))
 - [x] Real IP middleware ([chi](https://pkg.go.dev/github.com/go-chi/chi/middleware#RealIP))
 - [x] Structured logging middleware ([zap](https://github.com/uber-go/zap))
@@ -16,14 +16,13 @@ An opinionated DIY template for Golang JSON API applications
 - [x] Compatibility with standard library (net/http) middleware
 - [x] Error handling
 - [x] Healthcheck endpoint `/health`
-- [x] Authentication middleware
+- [x] Configurable Authentication via refresh token
 - [x] Sign In endpoint – `POST /sessions`
 - [x] Sign Out endpoint – `DELETE /sessions/current`
 - [x] Get current User endpoint – `GET /users/current`
 
 ### Database
 - [x] ORM ([bun](https://github.com/uptrace/bun))
-- [x] Authentication tables (users and sessions)
 - [x] Language-agnostic database migration toolkit ([dbmate](https://github.com/amacneil/dbmate))
 
 ### Quality control

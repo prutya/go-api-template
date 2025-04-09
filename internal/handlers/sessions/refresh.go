@@ -3,7 +3,6 @@
 package sessions
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -12,39 +11,39 @@ import (
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
-type CreateRequest struct {
-	Email    string `json:"email" validate:"required,gte=3,lte=512"`
-	Password string `json:"password" validate:"required,gte=1,lte=512"`
-}
-
-type Response struct {
+type RefreshResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-func NewCreateHandler(
+func NewRefreshHandler(
 	config *config.Config,
 	authenticationService authentication_service.AuthenticationService,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody := new(CreateRequest)
+		// Read the refresh token cookie
+		refreshTokenCookie, err := r.Cookie(config.AuthenticationRefreshTokenCookieName)
 
-		decoder := json.NewDecoder(r.Body)
+		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				utils.RenderError(w, r, utils.ErrUnauthorized)
+				return
+			}
 
-		if err := decoder.Decode(reqBody); err != nil {
-			utils.RenderInvalidJsonError(w, r)
-			return
-		}
-
-		if err := utils.Validate.Struct(reqBody); err != nil {
 			utils.RenderError(w, r, err)
 			return
 		}
 
-		refreshToken, refreshTokenExpiresAt, accessToken, err := authenticationService.Login(r.Context(), reqBody.Email, reqBody.Password)
+		newRefreshToken, newRefreshTokenExpiresAt, newAccessToken, err := authenticationService.Refresh(r.Context(), refreshTokenCookie.Value)
 
 		if err != nil {
-			if errors.Is(err, authentication_service.ErrInvalidCredentials) {
-				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
+			if errors.Is(err, authentication_service.ErrInvalidRefreshTokenClaims) ||
+				errors.Is(err, authentication_service.ErrRefreshTokenNotFound) ||
+				errors.Is(err, authentication_service.ErrRefreshTokenInvalid) ||
+				errors.Is(err, authentication_service.ErrRefreshTokenRevoked) ||
+				errors.Is(err, authentication_service.ErrSessionNotFound) ||
+				errors.Is(err, authentication_service.ErrSessionTerminated) {
+
+				utils.RenderError(w, r, utils.ErrUnauthorized)
 				return
 			}
 
@@ -57,15 +56,15 @@ func NewCreateHandler(
 			Name:     config.AuthenticationRefreshTokenCookieName,
 			Domain:   config.AuthenticationRefreshTokenCookieDomain,
 			Path:     config.AuthenticationRefreshTokenCookiePath,
-			Value:    refreshToken,
-			Expires:  refreshTokenExpiresAt,
+			Value:    newRefreshToken,
+			Expires:  newRefreshTokenExpiresAt,
 			Secure:   config.AuthenticationRefreshTokenCookieSecure,
 			HttpOnly: config.AuthenticationRefreshTokenCookieHttpOnly,
 			SameSite: config.AuthenticationRefreshTokenCookieSameSite,
 		})
 
-		responseBody := &Response{
-			AccessToken: accessToken,
+		responseBody := RefreshResponse{
+			AccessToken: newAccessToken,
 		}
 
 		utils.RenderJson(w, r, responseBody, http.StatusOK, nil)

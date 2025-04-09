@@ -13,8 +13,9 @@ import (
 
 type SessionRepo interface {
 	FindById(ctx context.Context, sessionID string) (*models.Session, error)
-	Create(ctx context.Context, userID string, sessionID string, secret []byte, expiresAt time.Time) error
-	Terminate(ctx context.Context, sessionID string) error
+	Create(ctx context.Context, sessionID string, userID string) error
+	TerminateByID(ctx context.Context, sessionId string, terminatedAt time.Time) error
+	TerminateSessionByAccessTokenId(ctx context.Context, accessTokenId string) error
 }
 
 type sessionRepo struct {
@@ -35,12 +36,10 @@ func (s *sessionRepo) FindById(ctx context.Context, sessionID string) (*models.S
 	return session, nil
 }
 
-func (s *sessionRepo) Create(ctx context.Context, userID string, sessionID string, secret []byte, expiresAt time.Time) error {
+func (s *sessionRepo) Create(ctx context.Context, sessionID string, userID string) error {
 	session := &models.Session{
-		ID:        sessionID,
-		UserID:    userID,
-		Secret:    secret,
-		ExpiresAt: expiresAt,
+		ID:     sessionID,
+		UserID: userID,
 	}
 
 	if _, err := s.db.NewInsert().Model(session).Exec(ctx); err != nil {
@@ -50,13 +49,32 @@ func (s *sessionRepo) Create(ctx context.Context, userID string, sessionID strin
 	return nil
 }
 
-func (s *sessionRepo) Terminate(ctx context.Context, sessionID string) error {
-	session := &models.Session{ID: sessionID}
+func (s *sessionRepo) TerminateByID(ctx context.Context, sessionId string, terminatedAt time.Time) error {
+	_, err := s.db.NewUpdate().
+		Model((*models.Session)(nil)).
+		Set("terminated_at = ?", terminatedAt).
+		Set("updated_at = now()").
+		Where("id = ?", sessionId).
+		Where("terminated_at IS NULL").
+		Exec(ctx)
 
-	// Set the terminated_at to the current time
-	if _, err := s.db.NewUpdate().Model(session).Set("terminated_at = now()").WherePK().Exec(ctx); err != nil {
-		return err
-	}
+	return err
+}
 
-	return nil
+func (s *sessionRepo) TerminateSessionByAccessTokenId(ctx context.Context, accessTokenId string) error {
+	_, err := s.db.NewUpdate().
+		TableExpr("sessions").
+		Set("terminated_at = now()").
+		Set("updated_at = now()").
+		Where(`id IN (
+			SELECT sessions.id
+			FROM sessions
+			JOIN refresh_tokens ON refresh_tokens.session_id = sessions.id
+			JOIN access_tokens ON access_tokens.refresh_token_id = refresh_tokens.id
+			WHERE access_tokens.id = ?
+		)`, accessTokenId).
+		Where("terminated_at IS NULL").
+		Exec(ctx)
+
+	return err
 }

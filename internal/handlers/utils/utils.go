@@ -28,6 +28,8 @@ func RenderInvalidJsonError(w http.ResponseWriter, r *http.Request) {
 }
 
 func RenderError(w http.ResponseWriter, r *http.Request, err error) {
+	logger := logger.MustFromContext(r.Context())
+
 	// Handle `ServerError`s
 	if serverError, isServerError := err.(*ServerError); isServerError {
 		responseInfo, hasResponseInfo := GetRequestResponseInfo(r)
@@ -63,6 +65,8 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 
 		return
 	}
+
+	logger.Warn("Failed to handle error", zap.Error(err))
 
 	RenderJson(w, r, &ErrorResponse{Error: ErrCodeInternal}, http.StatusInternalServerError, nil)
 }

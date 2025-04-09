@@ -1,5 +1,3 @@
-// TODO: Test
-
 package utils
 
 import (
@@ -10,17 +8,12 @@ import (
 	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/logger"
-	"prutya/go-api-template/internal/models"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
-type currentUserContextKeyType struct{}
+type accessTokenClaimsContextKeyType struct{}
 
-type currentSessionContextKeyType struct{}
-
-var currentUserContextKey = currentUserContextKeyType{}
-
-var currentSessionContextKey = currentSessionContextKeyType{}
+var accessTokenClaimsContextKey = accessTokenClaimsContextKeyType{}
 
 func NewAuthenticationMiddleware(authenticationService authentication_service.AuthenticationService) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -41,15 +34,12 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 				return
 			}
 
-			user, userSession, err := authenticationService.Authenticate(ctx, tokenString)
+			accessTokenClaims, err := authenticationService.Authenticate(ctx, tokenString)
 
 			if err != nil {
-				if errors.Is(err, authentication_service.ErrInvalidTokenClaims) ||
-					errors.Is(err, authentication_service.ErrSessionNotFound) ||
-					errors.Is(err, authentication_service.ErrInvalidToken) ||
-					errors.Is(err, authentication_service.ErrSessionExpired) ||
-					errors.Is(err, authentication_service.ErrSessionTerminated) ||
-					errors.Is(err, authentication_service.ErrUserNotFound) {
+				if errors.Is(err, authentication_service.ErrInvalidAccessTokenClaims) ||
+					errors.Is(err, authentication_service.ErrAccessTokenNotFound) ||
+					errors.Is(err, authentication_service.ErrInvalidAccessToken) {
 
 					RenderError(w, r, ErrUnauthorized)
 					return
@@ -59,12 +49,11 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 				return
 			}
 
-			// Store the current user and the session in the context
-			ctx = NewContextWithCurrentUser(r.Context(), user)
-			ctx = NewContextWithCurrentSession(ctx, userSession)
+			// Store the access token claims in the context
+			ctx = NewContextWithAccessTokenClaims(ctx, accessTokenClaims)
 			r = r.WithContext(ctx)
 
-			logger.Info("User authenticated", zap.String("user_id", user.ID), zap.String("session_id", userSession.ID))
+			logger.Info("User authenticated", zap.String("user_id", accessTokenClaims.UserID))
 
 			next.ServeHTTP(w, r)
 		}
@@ -73,26 +62,14 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 	}
 }
 
-func NewContextWithCurrentUser(ctx context.Context, user *models.User) context.Context {
-	return context.WithValue(ctx, currentUserContextKey, user)
+func NewContextWithAccessTokenClaims(ctx context.Context, claims *authentication_service.AccessTokenClaims) context.Context {
+	return context.WithValue(ctx, accessTokenClaimsContextKey, claims)
 }
 
-func GetUserFromContext(ctx context.Context) *models.User {
-	if user, ok := ctx.Value(currentUserContextKey).(*models.User); ok {
-		return user
+func GetAccessTokenClaimsFromContext(ctx context.Context) *authentication_service.AccessTokenClaims {
+	if claims, ok := ctx.Value(accessTokenClaimsContextKey).(*authentication_service.AccessTokenClaims); ok {
+		return claims
 	}
 
-	panic("No user in context")
-}
-
-func NewContextWithCurrentSession(ctx context.Context, session *models.Session) context.Context {
-	return context.WithValue(ctx, currentSessionContextKey, session)
-}
-
-func GetSessionFromContext(ctx context.Context) *models.Session {
-	if session, ok := ctx.Value(currentSessionContextKey).(*models.Session); ok {
-		return session
-	}
-
-	panic("No session in context")
+	panic("no access token claims in context")
 }
