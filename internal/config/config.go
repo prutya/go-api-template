@@ -39,6 +39,9 @@ type Config struct {
 	AuthenticationRefreshTokenCookieSameSite    http.SameSite
 	AuthenticationAccessTokenTTL                time.Duration `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_TTL"`
 	AuthenticationAccessTokenSecretLength       int           `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_SECRET_LENGTH"`
+
+	TasksRedisAddr     string `mapstructure:"TASKS_REDIS_ADDR"`
+	TasksRedisPassword string `mapstructure:"TASKS_REDIS_PASSWORD"`
 }
 
 func Load() (*Config, error) {

@@ -20,6 +20,7 @@
   "write_timeout": "0s",
   "read_header_timeout": "10s",
   "idle_timeout": "0s",
+
   "authentication_timing_attack_delay": "500ms",
   "authentication_refresh_token_ttl": "36h",
   "authentication_refresh_token_secret_length": 32,
@@ -31,5 +32,8 @@
   "authentication_refresh_token_cookie_http_only": true,
   "authentication_refresh_token_cookie_same_site": "strict",
   "authentication_access_token_ttl": "15m",
-  "authentication_access_token_secret_length": 32
+  "authentication_access_token_secret_length": 32,
+
+  "tasks_redis_addr": "localhost:6379",
+  "tasks_redis_password": "app_redis_password"
 }

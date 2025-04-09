@@ -26,6 +26,9 @@ An opinionated DIY template for Golang JSON API applications
 - [x] ORM ([bun](https://github.com/uptrace/bun))
 - [x] Language-agnostic database migration toolkit ([dbmate](https://github.com/amacneil/dbmate))
 
+### Background jobs processing
+- [x] Background jobs processing setup via [Asynq](https://github.com/hibiken/asynq)
+
 ### Quality control
 - [x] Testing setup ([ginkgo](https://github.com/onsi/ginkgo))
 - [x] Github Actions Test job
@@ -46,31 +49,31 @@ An opinionated DIY template for Golang JSON API applications
 
 ## Running the app locally
 
-### Install the packages
+### 1. Install the packages
 
 ```sh
 go mod download
 ```
 
-### Start the database
+### 2. Start the database and Redis servers
 
 ```sh
-docker compose up --detach postgres
+docker compose up postgres redis
 ```
 
-### Run the database migrations
+### 3. Run the database migrations
 
 ```sh
 docker compose run --rm dbmate migrate
 ```
 
-### Seed the database
+### 4. Seed the database
 
 ```sh
 docker compose run --rm psql --echo-all --file /db/seed.sql
 ```
 
-### Start the app
+### 5. Start the app
 
 ```sh
 go run cmd/server/main.go
@@ -83,6 +86,16 @@ docker compose run --rm dbmate drop
 
 # Create the database and run migrations
 docker compose run --rm dbmate up
+```
+
+## Running the background jobs processor locally
+
+### 1. Set up the database
+Make sure that steps 1-4 from **Running the app locally** are completed
+
+### 2. Start the worker
+```sh
+go run cmd/worker/main.go
 ```
 
 ## Building the production image

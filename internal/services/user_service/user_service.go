@@ -10,7 +10,7 @@ import (
 )
 
 type UserService interface {
-	GetUserById(ctx context.Context, id string) (*models.User, error)
+	GetUserByID(ctx context.Context, id string) (*models.User, error)
 }
 
 var ErrUserNotFound = errors.New("user not found")
@@ -25,7 +25,7 @@ func NewUserService(userRepo repo.UserRepo) UserService {
 	}
 }
 
-func (s *userService) GetUserById(ctx context.Context, id string) (*models.User, error) {
+func (s *userService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	user, err := s.userRepo.FindById(ctx, id)
 
 	if err != nil {

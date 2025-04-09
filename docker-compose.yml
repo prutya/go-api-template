@@ -11,11 +11,11 @@ x-shared-configuration:
       POSTGRESQL_USERNAME: app_username
       POSTGRESQL_PASSWORD: app_password
       POSTGRESQL_DATABASE: app_database
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d app_database"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
+  redis: &redis
+    image: bitnami/redis:7.4.2-debian-12-r5
+    environment:
+      REDIS_PASSWORD: app_redis_password
 
 services:
 
@@ -37,6 +37,11 @@ services:
       - postgres_data:/bitnami/postgresql
     networks:
       - app_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app_database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   psql:
     <<: [*postgres]
@@ -47,6 +52,27 @@ services:
       - app_dev
     depends_on:
       postgres:
+        condition: service_healthy
+
+  redis:
+    <<: [*redis]
+    ports:
+      - 6379:6379
+    networks:
+      - app_dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis_cli:
+    <<: [*redis]
+    entrypoint: ["redis-cli", "-h", "redis", "-p", "6379", "-a", "app_redis_password"]
+    networks:
+      - app_dev
+    depends_on:
+      redis:
         condition: service_healthy
 
   lint:
@@ -95,6 +121,7 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+  redis_data: {}
 
 networks:
   app_dev: {}

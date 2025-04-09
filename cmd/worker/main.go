@@ -1,4 +1,4 @@
-// TODO: Extract code that is shared with the worker into a common package
+// TODO: Extract code that is shared with the server into a common package
 // "app container"?
 
 package main
@@ -9,13 +9,12 @@ import (
 	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
-	db "prutya/go-api-template/internal/db"
+	"prutya/go-api-template/internal/db"
 	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/repo"
-	"prutya/go-api-template/internal/server"
-	"prutya/go-api-template/internal/services/authentication_service"
 	"prutya/go-api-template/internal/services/user_service"
 	"prutya/go-api-template/internal/tasks_client"
+	"prutya/go-api-template/internal/tasks_server"
 )
 
 func main() {
@@ -56,27 +55,31 @@ func main() {
 
 	// Repositories
 	userRepo := repo.NewUserRepo(db)
-	sessionRepo := repo.NewSessionRepo(db)
-	refreshTokenRepo := repo.NewRefreshTokenRepo(db)
-	accessTokenRepo := repo.NewAccessTokenRepo(db)
+	// sessionRepo := repo.NewSessionRepo(db)
+	// refreshTokenRepo := repo.NewRefreshTokenRepo(db)
+	// accessTokenRepo := repo.NewAccessTokenRepo(db)
 
 	// Services
-	authenticationService := authentication_service.NewAuthenticationService(
-		cfg,
-		userRepo,
-		sessionRepo,
-		refreshTokenRepo,
-		accessTokenRepo,
-		tasksClient,
-	)
+	// authenticationService := authentication_service.NewAuthenticationService(
+	// 	cfg,
+	// 	userRepo,
+	// 	sessionRepo,
+	// 	refreshTokenRepo,
+	// 	accessTokenRepo,
+	// 	tasksClient,
+	// )
 	userService := user_service.NewUserService(userRepo)
 
-	// Server
-	router := server.NewRouter(cfg, logger, authenticationService, userService)
-	server := server.NewServer(cfg, router, logger)
+	// Tasks server
+	tasksServer := tasks_server.NewServer(
+		ctx,
+		cfg.TasksRedisAddr,
+		cfg.TasksRedisPassword,
+		userService,
+	)
 
-	if err := server.Start(); err != nil {
-		logger.Fatal("Server error", zap.Error(err))
+	if err := tasksServer.Run(); err != nil {
+		logger.Fatal("Tasks server error", zap.Error(err))
 	}
 
 	logger.Info("Bye!")

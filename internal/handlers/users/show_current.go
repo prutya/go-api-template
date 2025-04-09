@@ -21,7 +21,7 @@ func NewShowCurrentHandler(config *config.Config, userService user_service.UserS
 
 		currentAccessTokenClaims := utils.GetAccessTokenClaimsFromContext(ctx)
 
-		currentUser, err := userService.GetUserById(ctx, currentAccessTokenClaims.UserID)
+		currentUser, err := userService.GetUserByID(ctx, currentAccessTokenClaims.UserID)
 		if err != nil {
 			utils.RenderError(w, r, err)
 			return

@@ -11,6 +11,7 @@ import (
 
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/repo"
+	"prutya/go-api-template/internal/tasks_client"
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
@@ -47,6 +48,7 @@ type authenticationService struct {
 	sessionRepo      repo.SessionRepo
 	refreshTokenRepo repo.RefreshTokenRepo
 	accessTokenRepo  repo.AccessTokenRepo
+	tasksClient      tasks_client.Client
 }
 
 func NewAuthenticationService(
@@ -55,6 +57,7 @@ func NewAuthenticationService(
 	sessionRepo repo.SessionRepo,
 	refreshTokenRepo repo.RefreshTokenRepo,
 	accessTokenRepo repo.AccessTokenRepo,
+	tasksClient tasks_client.Client,
 ) AuthenticationService {
 	return &authenticationService{
 		config:           config,
@@ -62,5 +65,6 @@ func NewAuthenticationService(
 		sessionRepo:      sessionRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		accessTokenRepo:  accessTokenRepo,
+		tasksClient:      tasksClient,
 	}
 }

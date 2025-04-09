@@ -10,10 +10,16 @@ import (
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+
+	"prutya/go-api-template/internal/logger"
+	"prutya/go-api-template/internal/tasks"
 )
 
 func (s *authenticationService) Login(ctx context.Context, email string, password string) (string, time.Time, string, error) {
+	logger := logger.MustFromContext(ctx)
+
 	// Prevent the potential attacker from measuring the response time
 	startTime := time.Now()
 
@@ -55,7 +61,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	// Create a session
 
 	sessionIdUUID, err := uuid.NewV7()
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -63,7 +68,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	sessionId := sessionIdUUID.String()
 
 	err = s.sessionRepo.Create(ctx, sessionId, user.ID)
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -71,7 +75,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	// Create a RefreshToken
 
 	refreshTokenUUID, err := uuid.NewV7()
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -81,7 +84,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	refreshTokenSecret := make([]byte, s.config.AuthenticationRefreshTokenSecretLength)
 
 	_, err = rand.Read(refreshTokenSecret)
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -102,7 +104,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	// Create an AccessToken
 
 	accessTokenUUID, err := uuid.NewV7()
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -142,7 +143,6 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	refreshTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
 
 	refreshTokenString, err := refreshTokenJWT.SignedString(refreshTokenSecret)
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
@@ -162,10 +162,22 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	accessTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
 
 	accessTokenString, err := accessTokenJWT.SignedString(accessTokenSecret)
-
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
+
+	// For demo purposes, we will schedule a job to greet the user
+	helloTask, err := tasks.NewUserHelloTask(user.ID)
+	if err != nil {
+		return "", time.Time{}, "", err
+	}
+
+	helloTaskInfo, err := s.tasksClient.Enqueue(ctx, helloTask)
+	if err != nil {
+		return "", time.Time{}, "", err
+	}
+
+	logger.Debug("Scheduled task to greet user", zap.String("task_id", helloTaskInfo.ID))
 
 	return refreshTokenString, refreshTokenExpiresAt, accessTokenString, nil
 }
