@@ -6,14 +6,14 @@ x-shared-configuration:
       - "./db:/db"
 
   postgres: &postgres
-    image: bitnami/postgresql:17.4.0-debian-12-r4
+    image: bitnami/postgresql:17.4.0-debian-12-r15
     environment:
       POSTGRESQL_USERNAME: app_username
       POSTGRESQL_PASSWORD: app_password
       POSTGRESQL_DATABASE: app_database
 
   redis: &redis
-    image: bitnami/redis:7.4.2-debian-12-r5
+    image: bitnami/redis:7.4.2-debian-12-r8
     environment:
       REDIS_PASSWORD: app_redis_password
 
@@ -76,7 +76,7 @@ services:
         condition: service_healthy
 
   lint:
-    image: docker.io/golangci/golangci-lint:v1.64.6
+    image: docker.io/golangci/golangci-lint:v2.0.2-alpine
     volumes:
       - .:/app
     working_dir: /app

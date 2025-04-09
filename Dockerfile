@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.24.1-bookworm AS base
+FROM golang:1.24.2-bookworm@sha256:00eccd446e023d3cd9566c25a6e6a02b90db3e1e0bbe26a48fc29cd96e800901 AS base
 
 
 
@@ -42,7 +42,7 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 ##### Final production image ####
 
-FROM debian:bookworm-20241111-slim AS production
+FROM debian:bookworm-20250407-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3 AS production
 
 RUN apt update && apt install -y ca-certificates curl && apt clean
 

@@ -1,6 +1,6 @@
 module prutya/go-api-template
 
-go 1.24.1
+go 1.24.2
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
@@ -9,6 +9,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.3.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
+	github.com/hibiken/asynq v0.25.1
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/spf13/viper v1.20.1
@@ -31,7 +32,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/hibiken/asynq v0.25.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
