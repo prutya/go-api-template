@@ -1,5 +1,3 @@
-// TODO: Add task_id to the logger output
-
 package tasks_server
 
 import (
@@ -64,6 +62,7 @@ func loggingMiddleware(h asynq.Handler) asynq.Handler {
 
 		taskID := t.ResultWriter().TaskID()
 
+		// Add task ID to the logger context for better traceability
 		logger = logger.With(zap.String("task_id", taskID))
 		ctx = loggerpkg.NewContext(ctx, logger)
 
