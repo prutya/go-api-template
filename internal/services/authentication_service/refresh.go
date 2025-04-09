@@ -78,7 +78,11 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 			logger.Warn("RefreshToken reuse detected", zap.String("refresh_token_id", dbRefreshToken.ID))
 
 			// The session is compromised, so we need to terminate it
-			s.sessionRepo.TerminateByID(ctx, dbRefreshToken.SessionID, time.Now())
+			if err := s.sessionRepo.TerminateByID(ctx, dbRefreshToken.SessionID, time.Now()); err != nil {
+				logger.Error("Failed to terminate session", zap.String("session_id", dbRefreshToken.SessionID), zap.Error(err))
+
+				return "", time.Time{}, "", err
+			}
 
 			return "", time.Time{}, "", ErrRefreshTokenRevoked
 		} else {

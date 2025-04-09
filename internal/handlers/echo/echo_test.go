@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"prutya/go-api-template/internal/handlers/echo"
+	"prutya/go-api-template/internal/logger"
 )
 
 var _ = Describe("Echo", func() {
@@ -18,9 +19,17 @@ var _ = Describe("Echo", func() {
 	var r *http.Request
 
 	JustBeforeEach(func() {
+
 		handler = echo.NewHandler()
 		w = httptest.NewRecorder()
 		r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
+
+		loggerInstance, err := logger.New("fatal", "2006-01-02T15:04:05Z07:00")
+		if err != nil {
+			panic(err)
+		}
+
+		r = r.WithContext(logger.NewContext(r.Context(), loggerInstance))
 
 		handler.ServeHTTP(w, r)
 	})
