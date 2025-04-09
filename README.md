@@ -16,10 +16,11 @@ An opinionated DIY template for Golang JSON API applications
 - [x] Compatibility with standard library (net/http) middleware
 - [x] Error handling
 - [x] Healthcheck endpoint `/health`
-- [x] Configurable Authentication via refresh token
+- [x] Secure Configurable Authentication (based on Refresh Tokens)
 - [x] Sign In endpoint – `POST /sessions`
 - [x] Sign Out endpoint – `DELETE /sessions/current`
 - [x] Get current User endpoint – `GET /users/current`
+- [x] Refresh Access Token endpoint – `POST /sessions/refresh`
 
 ### Database
 - [x] ORM ([bun](https://github.com/uptrace/bun))
