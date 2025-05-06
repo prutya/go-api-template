@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.24.2-bookworm@sha256:00eccd446e023d3cd9566c25a6e6a02b90db3e1e0bbe26a48fc29cd96e800901 AS base
+FROM golang:1.24.2-bookworm@sha256:79390b5e5af9ee6e7b1173ee3eac7fadf6751a545297672916b59bfa0ecf6f71 AS base
 
 
 
@@ -33,7 +33,15 @@ WORKDIR /app
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -tags netgo -o main ./cmd/server/main.go
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+
+# Build the server binary first, so that the build cache can be reused by the
+# other builds. This is faster than building the binaries in parallel.
+RUN go build -ldflags="-s -w" -o server ./cmd/server/main.go
+
+# Build the worker binary
+RUN go build -ldflags="-s -w" -o worker ./cmd/worker/main.go
 
 # Create a non-root user
 RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
@@ -42,13 +50,14 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 ##### Final production image ####
 
-FROM debian:bookworm-20250407-slim@sha256:b1211f6d19afd012477bd34fdcabb6b663d680e0f4b0537da6e6b0fd057a3ec3 AS production
+FROM debian:bookworm-20250428-slim@sha256:4b50eb66f977b4062683ff434ef18ac191da862dbe966961bc11990cf5791a8d AS production
 
 RUN apt update && apt install -y ca-certificates curl && apt clean
 
 WORKDIR /app
 
-COPY --from=build_production /app/main .
+COPY --from=build_production /app/server .
+COPY --from=build_production /app/worker .
 
 # Prepare the config file
 RUN echo "{}" > app.json
@@ -58,6 +67,6 @@ COPY --from=build_production /etc_passwd /etc/passwd
 
 USER app
 
-CMD ["/app/main"]
+CMD ["/app/server"]
 
 EXPOSE 3333

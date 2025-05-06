@@ -110,6 +110,8 @@ docker compose run --build --rm lint
 
 ## Building the production image
 
+Both server and worker binaries will be in the same image
+
 ```sh
 docker build . --tag go-api-template:latest
 ```
