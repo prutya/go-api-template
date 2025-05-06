@@ -17,7 +17,7 @@ var _ = Describe("Panic_check", func() {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("GET", "/panic-check", bytes.NewBuffer([]byte("")))
 
-		loggerInstance, err := logger.New("fatal", "2006-01-02T15:04:05Z07:00")
+		loggerInstance, err := logger.New("error", "json")
 		if err != nil {
 			panic(err)
 		}

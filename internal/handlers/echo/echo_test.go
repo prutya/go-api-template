@@ -24,7 +24,7 @@ var _ = Describe("Echo", func() {
 		w = httptest.NewRecorder()
 		r = httptest.NewRequest("GET", "/echo", bytes.NewBuffer(requestBody))
 
-		loggerInstance, err := logger.New("fatal", "2006-01-02T15:04:05Z07:00")
+		loggerInstance, err := logger.New("error", "json")
 		if err != nil {
 			panic(err)
 		}
