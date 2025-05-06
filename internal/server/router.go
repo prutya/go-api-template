@@ -1,13 +1,13 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/handlers/echo"
@@ -27,7 +27,7 @@ type Router struct {
 
 func NewRouter(
 	config *config.Config,
-	logger *zap.Logger,
+	logger *slog.Logger,
 	authenticationService authentication_service.AuthenticationService,
 	userService user_service.UserService,
 ) *Router {

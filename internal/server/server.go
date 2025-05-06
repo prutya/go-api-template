@@ -3,12 +3,11 @@ package server
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
 )
@@ -16,10 +15,10 @@ import (
 type Server struct {
 	httpServer *http.Server
 	config     *config.Config
-	logger     *zap.Logger
+	logger     *slog.Logger
 }
 
-func NewServer(config *config.Config, router *Router, logger *zap.Logger) *Server {
+func NewServer(config *config.Config, router *Router, logger *slog.Logger) *Server {
 	httpServer := &http.Server{
 		Addr:              config.ListenAddr,
 		Handler:           router.mux,
@@ -59,13 +58,13 @@ func (s *Server) Start() error {
 		// Shutdown the server with a timeout to let it complete the processing
 		// of ongoing requests
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
-			s.logger.Error("Server stopped with an error", zap.Error(err))
+			s.logger.Error("Server stopped with an error", "error", err)
 		} else {
 			s.logger.Info("Server stopped")
 		}
 	}()
 
-	s.logger.Info("Server is starting", zap.String("addr", s.config.ListenAddr))
+	s.logger.Info("Server is starting", "addr", s.config.ListenAddr)
 
 	// This blocks until the server is stopped
 	err := s.httpServer.ListenAndServe()

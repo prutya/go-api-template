@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 
-	"go.uber.org/zap"
-
 	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
@@ -53,7 +51,7 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 			ctx = NewContextWithAccessTokenClaims(ctx, accessTokenClaims)
 			r = r.WithContext(ctx)
 
-			logger.Info("User authenticated", zap.String("user_id", accessTokenClaims.UserID))
+			logger.Info("User authenticated", "user_id", accessTokenClaims.UserID)
 
 			next.ServeHTTP(w, r)
 		}

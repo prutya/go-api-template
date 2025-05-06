@@ -9,7 +9,6 @@ An opinionated DIY template for Golang JSON API applications
 ### App
 - [x] Router ([chi](https://github.com/go-chi/chi))
 - [x] Real IP middleware ([chi](https://pkg.go.dev/github.com/go-chi/chi/middleware#RealIP))
-- [x] Structured logging middleware ([zap](https://github.com/uber-go/zap))
 - [x] Request ID middleware
 - [x] Error recovery middleware
 - [x] CORS middleware ([chi](https://github.com/go-chi/cors))
@@ -35,7 +34,7 @@ An opinionated DIY template for Golang JSON API applications
 - [x] Github Actions Lint job ([golangci-lint](https://github.com/golangci/golangci-lint))
 
 ### Misc
-- [x] Structured logger ([zap](https://github.com/uber-go/zap))
+- [x] Structured logger ([slog](https://go.dev/blog/slog))
 - [x] Configuration ([viper](https://github.com/spf13/viper))
 
 ### Development and deployment
@@ -96,12 +95,6 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 ### 2. Start the worker
 ```sh
 go run cmd/worker/main.go
-```
-
-## Building the production image
-
-```sh
-docker build . --tag my-counters-api:latest
 ```
 
 ## Running tests

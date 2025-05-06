@@ -1,37 +1,38 @@
-package tasks_server
+package tasks
 
 import (
+	"log/slog"
+	"os"
 	stringspkg "strings"
-
-	"go.uber.org/zap"
 )
 
-type zapLoggerAdapter struct {
-	logger *zap.Logger
+type slogLoggerAdapter struct {
+	logger *slog.Logger
 }
 
-func newZapLoggerAdapter(logger *zap.Logger) *zapLoggerAdapter {
-	return &zapLoggerAdapter{logger: logger}
+func NewSlogLoggerAdapter(logger *slog.Logger) *slogLoggerAdapter {
+	return &slogLoggerAdapter{logger: logger}
 }
 
-func (l *zapLoggerAdapter) Debug(args ...any) {
+func (l *slogLoggerAdapter) Debug(args ...any) {
 	l.logger.Debug(adaptLogEntry(args...))
 }
 
-func (l *zapLoggerAdapter) Info(args ...any) {
+func (l *slogLoggerAdapter) Info(args ...any) {
 	l.logger.Info(adaptLogEntry(args...))
 }
 
-func (l *zapLoggerAdapter) Warn(args ...any) {
+func (l *slogLoggerAdapter) Warn(args ...any) {
 	l.logger.Warn(adaptLogEntry(args...))
 }
 
-func (l *zapLoggerAdapter) Error(args ...any) {
+func (l *slogLoggerAdapter) Error(args ...any) {
 	l.logger.Error(adaptLogEntry(args...))
 }
 
-func (l *zapLoggerAdapter) Fatal(args ...any) {
-	l.logger.Fatal(adaptLogEntry(args...))
+func (l *slogLoggerAdapter) Fatal(args ...any) {
+	l.logger.Error(adaptLogEntry(args...))
+	os.Exit(1)
 }
 
 func adaptLogEntry(args ...any) string {

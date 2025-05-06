@@ -2,12 +2,11 @@ package utils
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
-
-	internallogger "prutya/go-api-template/internal/logger"
+	loggerpkg "prutya/go-api-template/internal/logger"
 )
 
 type ResponseInfo struct {
@@ -16,16 +15,18 @@ type ResponseInfo struct {
 	InnerError error
 }
 
-type ResponseInfoContextKey struct{}
+type responseInfoContextKeyType struct{}
 
-func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
+var responseInfoContextKey = responseInfoContextKeyType{}
+
+func NewLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			requestLogger := logger
 
 			// Add request_id to the logger output
 			if requestId, requestIdOk := GetRequestId(r); requestIdOk {
-				requestLogger = requestLogger.With(zap.String("request_id", requestId))
+				requestLogger = requestLogger.With("request_id", requestId)
 			}
 
 			responseInfo := new(ResponseInfo)
@@ -35,10 +36,11 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 			r = SetRequestLogger(r, requestLogger)
 			r = SetRequestResponseInfo(r, responseInfo)
 
-			requestLogger.Info(
+			requestLogger.InfoContext(
+				r.Context(),
 				"Request started",
-				zap.String("method", r.Method),
-				zap.String("url", r.URL.String()),
+				"method", r.Method,
+				"url", r.URL.String(),
 			)
 
 			// Measure the request duration
@@ -49,18 +51,20 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 			duration := time.Since(start)
 
 			if responseInfo.ErrorCode != "" {
-				requestLogger.Info(
+				requestLogger.InfoContext(
+					r.Context(),
 					"Request ended",
-					zap.Duration("duration", duration),
-					zap.Int("status", responseInfo.HttpStatus),
-					zap.String("error_code", responseInfo.ErrorCode),
-					zap.Error(responseInfo.InnerError),
+					"duration", duration,
+					"status", responseInfo.HttpStatus,
+					"error_code", responseInfo.ErrorCode,
+					"error", responseInfo.InnerError,
 				)
 			} else {
-				requestLogger.Info(
+				requestLogger.InfoContext(
+					r.Context(),
 					"Request ended",
-					zap.Duration("duration", duration),
-					zap.Int("status", responseInfo.HttpStatus),
+					"duration", duration,
+					"status", responseInfo.HttpStatus,
 				)
 			}
 		}
@@ -69,18 +73,18 @@ func NewLoggerMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-func SetRequestLogger(r *http.Request, logger *zap.Logger) *http.Request {
-	ctxWithLogger := internallogger.NewContext(r.Context(), logger)
+func SetRequestLogger(r *http.Request, logger *slog.Logger) *http.Request {
+	ctxWithLogger := loggerpkg.NewContext(r.Context(), logger)
 
 	return r.WithContext(ctxWithLogger)
 }
 
 func SetRequestResponseInfo(r *http.Request, responseInfo *ResponseInfo) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), ResponseInfoContextKey{}, responseInfo))
+	return r.WithContext(context.WithValue(r.Context(), responseInfoContextKey, responseInfo))
 }
 
 func GetRequestResponseInfo(r *http.Request) (*ResponseInfo, bool) {
-	ri, ok := r.Context().Value(ResponseInfoContextKey{}).(*ResponseInfo)
+	ri, ok := r.Context().Value(responseInfoContextKey).(*ResponseInfo)
 
 	return ri, ok
 }

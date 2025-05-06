@@ -2,24 +2,30 @@ package app
 
 import (
 	"context"
+	"log/slog"
+	"os"
 
 	"github.com/uptrace/bun"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/db"
-	"prutya/go-api-template/internal/logger"
+	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/repo"
 	"prutya/go-api-template/internal/services/authentication_service"
 	"prutya/go-api-template/internal/services/user_service"
 	"prutya/go-api-template/internal/tasks_client"
 )
 
-type App struct {
+type AppEssentials struct {
 	Config  *config.Config
-	Logger  *zap.Logger
+	Logger  *slog.Logger
 	Context context.Context
-	DB      bun.IDB
+}
+
+type App struct {
+	Essentials *AppEssentials
+
+	DB bun.IDB
 
 	TasksClient tasks_client.Client
 
@@ -32,7 +38,7 @@ type App struct {
 	UserService           user_service.UserService
 }
 
-func Initialize() *App {
+func InitializeEssentials() *AppEssentials {
 	// Config
 	cfg, err := config.Load()
 	if err != nil {
@@ -40,33 +46,46 @@ func Initialize() *App {
 	}
 
 	// Logger
-	loggerInstance, err := logger.New(cfg.LogLevel, cfg.LogTimeFormat)
+	logger, err := loggerpkg.New(cfg.LogLevel, cfg.LogFormat)
 	if err != nil {
 		panic(err)
 	}
-	loggerInstance.Info("Logger OK")
 
 	// Context
 	ctx := context.Background()
-	ctx = logger.NewContext(ctx, loggerInstance)
+	ctx = loggerpkg.NewContext(ctx, logger)
+
+	return &AppEssentials{
+		Config:  cfg,
+		Logger:  logger,
+		Context: ctx,
+	}
+}
+
+func Initialize() *App {
+	appEssentials := InitializeEssentials()
+
+	cfg, logger, ctx := appEssentials.Config, appEssentials.Logger, appEssentials.Context
 
 	// Database
 	db := db.New(cfg.DatabaseUrl)
 
 	// Smoke-test the database connection
-	if err := db.PingContext(ctx); err != nil {
-		loggerInstance.Fatal("Failed to connect to the database", zap.Error(err))
+	if err := db.PingContext(ctx); err == nil {
+		logger.InfoContext(ctx, "Database OK")
+	} else {
+		logger.ErrorContext(ctx, "Failed to ping the database", "error", err)
+		os.Exit(1)
 	}
-	loggerInstance.Info("Database OK")
 
 	// Tasks client
 	tasksClient := tasks_client.NewClient(cfg.TasksRedisAddr, cfg.TasksRedisPassword)
 
 	// Smoke-test the tasks client connection
 	if err := tasksClient.Ping(); err != nil {
-		loggerInstance.Fatal("Failed to connect to the tasks client", zap.Error(err))
+		logger.ErrorContext(ctx, "Failed to connect to the tasks client", "error", err)
 	}
-	loggerInstance.Info("Tasks client OK")
+	logger.InfoContext(ctx, "Tasks client OK")
 
 	// Repositories
 	userRepo := repo.NewUserRepo(db)
@@ -86,9 +105,7 @@ func Initialize() *App {
 	userService := user_service.NewUserService(userRepo)
 
 	return &App{
-		Config:                 cfg,
-		Logger:                 loggerInstance,
-		Context:                ctx,
+		Essentials:             appEssentials,
 		DB:                     db,
 		TasksClient:            tasksClient,
 		UserRepository:         userRepo,

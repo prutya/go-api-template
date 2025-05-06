@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	LogLevel             string        `mapstructure:"LOG_LEVEL"`
-	LogTimeFormat        string        `mapstructure:"LOG_TIME_FORMAT"`
+	LogFormat            string        `mapstructure:"LOG_FORMAT"`
 	DatabaseUrl          string        `mapstructure:"DATABASE_URL"`
 	RequestTimeout       time.Duration `mapstructure:"REQUEST_TIMEOUT"`
 	CorsAllowedOrigins   []string      `mapstructure:"CORS_ALLOWED_ORIGINS"`
@@ -53,7 +53,7 @@ func Load() (*Config, error) {
 	viper.AutomaticEnv()
 
 	viper.SetDefault("log_level", "debug")
-	viper.SetDefault("log_time_format", "iso8601")
+	viper.SetDefault("log_format", "json")
 	viper.SetDefault("request_timeout", 60*time.Second)
 	viper.SetDefault("cors_allowed_origins", []string{"http://localhost:3000"})
 	viper.SetDefault("cors_allowed_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})

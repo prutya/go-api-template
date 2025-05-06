@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/hibiken/asynq"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/user_service"
@@ -39,7 +38,7 @@ func (h *userHelloTaskHandler) ProcessTask(ctx context.Context, task *asynq.Task
 
 	// Simulate sending a hello message to the user
 	// In a real application, you would replace this with actual logic
-	logger.Info("Simulating hello message to user", zap.String("user_id", user.ID))
+	logger.InfoContext(ctx, "Simulating hello message to user", "user_id", user.ID)
 
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/hibiken/asynq"
-	"go.uber.org/zap"
 
 	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/user_service"
@@ -38,7 +37,7 @@ func NewServer(
 		asynq.Config{
 			Concurrency: 10,
 			BaseContext: func() context.Context { return baseCtx },
-			Logger:      newZapLoggerAdapter(logger),
+			Logger:      tasks.NewSlogLoggerAdapter(logger),
 		},
 	)
 
@@ -63,21 +62,21 @@ func loggingMiddleware(h asynq.Handler) asynq.Handler {
 		taskID := t.ResultWriter().TaskID()
 
 		// Add task ID to the logger context for better traceability
-		logger = logger.With(zap.String("task_id", taskID))
+		logger = logger.With("task_id", taskID)
 		ctx = loggerpkg.NewContext(ctx, logger)
 
 		start := time.Now()
-		logger.Info("Processing task", zap.String("task_type", t.Type()))
+		logger.InfoContext(ctx, "Processing task", "task_type", t.Type())
 
 		err := h.ProcessTask(ctx, t)
 		if err != nil {
 
-			logger.Error("Failed to process task", zap.Error(err), zap.Duration("duration", time.Since(start)))
+			logger.ErrorContext(ctx, "Failed to process task", "error", err, "duration", time.Since(start))
 
 			return err
 		}
 
-		logger.Info("Task processed", zap.Duration("duration", time.Since(start)))
+		logger.InfoContext(ctx, "Task processed", "duration", time.Since(start))
 
 		return nil
 	})

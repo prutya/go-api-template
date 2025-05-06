@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/logger"
 )
@@ -66,7 +65,7 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 		return
 	}
 
-	logger.Warn("Failed to handle error", zap.Error(err))
+	logger.WarnContext(r.Context(), "Failed to handle error", "error", err)
 
 	RenderJson(w, r, &ErrorResponse{Error: ErrCodeInternal}, http.StatusInternalServerError, nil)
 }
@@ -82,7 +81,7 @@ func RenderJson(
 
 	if marshalErr != nil {
 		logger := logger.MustFromContext(r.Context())
-		logger.Error("Failed to render an object as JSON", zap.Any("object", object))
+		logger.ErrorContext(r.Context(), "Failed to render an object as JSON", "object", object)
 
 		RenderRawJson(
 			w,
@@ -121,7 +120,8 @@ func RenderRawJson(
 
 	if _, err := w.Write(json); err != nil {
 		logger := logger.MustFromContext(r.Context())
-		logger.Panic("Failed to write JSON", zap.Error(err))
+		logger.ErrorContext(r.Context(), "Failed to write JSON", "error", err)
+		panic(err)
 	}
 }
 

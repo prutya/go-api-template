@@ -4,14 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/logger"
+	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/models"
 )
 
@@ -36,7 +37,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 
 	_, err := jwt.ParseWithClaims(refreshToken, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Extract the claims
-		claims, ok := token.Claims.(*RefreshTokenClaims)
+		refreshTokenClaims_inner, ok := token.Claims.(*RefreshTokenClaims)
 		if !ok {
 			return nil, ErrInvalidRefreshTokenClaims
 		}
@@ -46,9 +47,10 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		// NOTE: In a scenario when the Relying Party (RP) and the
 		// Authorization Server (AS) are separate, this should be replaced with a
 		// validation of the token based on the public key of the AS.
-		dbRefreshToken_inner, err := s.refreshTokenRepo.FindById(ctx, claims.ID)
+		// Find the refresh token by ID
+		dbRefreshToken_inner, err := s.refreshTokenRepo.FindById(ctx, refreshTokenClaims_inner.ID)
 		if err != nil {
-			logger.Warn("RefreshToken not found", zap.String("refresh_token_id", claims.ID))
+			logger.WarnContext(ctx, "RefreshToken not found", "refresh_token_id", refreshTokenClaims_inner.ID)
 
 			return nil, ErrRefreshTokenNotFound
 		}
@@ -75,20 +77,21 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		// sent at the same time
 
 		if time.Now().After(dbRefreshToken.LeewayExpiresAt.Time) {
-			logger.Warn("RefreshToken reuse detected", zap.String("refresh_token_id", dbRefreshToken.ID))
+			logger.WarnContext(ctx, "RefreshToken reuse detected", "refresh_token_id", dbRefreshToken.ID)
 
 			// The session is compromised, so we need to terminate it
 			if err := s.sessionRepo.TerminateByID(ctx, dbRefreshToken.SessionID, time.Now()); err != nil {
-				logger.Error("Failed to terminate session", zap.String("session_id", dbRefreshToken.SessionID), zap.Error(err))
+				logger.ErrorContext(ctx, "Failed to terminate session", "session_id", dbRefreshToken.SessionID, "error", err)
 
 				return "", time.Time{}, "", err
 			}
 
 			return "", time.Time{}, "", ErrRefreshTokenRevoked
 		} else {
-			logger.Info(
+			logger.InfoContext(
+				ctx,
 				"RefreshToken reuse detected but within the leeway period",
-				zap.String("refresh_token_id", dbRefreshToken.ID),
+				"refresh_token_id", dbRefreshToken.ID,
 			)
 		}
 	}
@@ -99,7 +102,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			logger.Warn("Session not found", zap.String("session_id", dbRefreshToken.SessionID))
+			logger.WarnContext(ctx, "Session not found", "session_id", dbRefreshToken.SessionID)
 
 			return "", time.Time{}, "", ErrSessionNotFound
 		}
@@ -108,7 +111,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 	}
 
 	if session.TerminatedAt.Valid {
-		logger.Warn("Session terminated", zap.String("session_id", dbRefreshToken.SessionID))
+		logger.WarnContext(ctx, "Session terminated", "session_id", dbRefreshToken.SessionID)
 
 		return "", time.Time{}, "", ErrSessionTerminated
 	}
@@ -130,6 +133,9 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
+
+	// Make sure that the refresh token secret is redacted in logs
+	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(newRefreshTokenSecret))
 
 	newRefreshTokenExpiresAt := time.Now().Add(s.config.AuthenticationRefreshTokenTTL)
 
@@ -161,6 +167,9 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
+
+	// Make sure that the access token secret is redacted in logs
+	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(newAccessTokenSecret))
 
 	newAccessTokenExpiresAt := time.Now().Add(s.config.AuthenticationAccessTokenTTL)
 

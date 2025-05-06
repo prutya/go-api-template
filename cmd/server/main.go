@@ -1,22 +1,23 @@
 package main
 
 import (
-	"go.uber.org/zap"
-
+	"os"
 	"prutya/go-api-template/internal/app"
 	"prutya/go-api-template/internal/server"
 )
 
 func main() {
 	app := app.Initialize()
+	cfg, ctx, logger := app.Essentials.Config, app.Essentials.Context, app.Essentials.Logger
 
 	// Server
-	router := server.NewRouter(app.Config, app.Logger, app.AuthenticationService, app.UserService)
-	server := server.NewServer(app.Config, router, app.Logger)
+	router := server.NewRouter(cfg, logger, app.AuthenticationService, app.UserService)
+	server := server.NewServer(cfg, router, logger)
 
 	if err := server.Start(); err != nil {
-		app.Logger.Fatal("Server error", zap.Error(err))
+		logger.ErrorContext(ctx, "Server error", "error", err)
+		os.Exit(1)
 	}
 
-	app.Logger.Info("Bye!")
+	logger.InfoContext(ctx, "Bye!")
 }

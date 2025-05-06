@@ -1,6 +1,6 @@
 {
   "log_level": "debug",
-  "log_time_format": "iso8601",
+  "log_format": "json",
   "database_url": "postgres://app_username:app_password@localhost:5432/app_database?sslmode=disable",
   "request_timeout": "60s",
   "cors_allowed_origins": ["http://localhost:3000"],

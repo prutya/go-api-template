@@ -1,26 +1,27 @@
 package main
 
 import (
-	"go.uber.org/zap"
-
+	"os"
 	"prutya/go-api-template/internal/app"
 	"prutya/go-api-template/internal/tasks_server"
 )
 
 func main() {
 	app := app.Initialize()
+	ctx, cfg, logger := app.Essentials.Context, app.Essentials.Config, app.Essentials.Logger
 
 	// Tasks server
 	tasksServer := tasks_server.NewServer(
-		app.Context,
-		app.Config.TasksRedisAddr,
-		app.Config.TasksRedisPassword,
+		ctx,
+		cfg.TasksRedisAddr,
+		cfg.TasksRedisPassword,
 		app.UserService,
 	)
 
 	if err := tasksServer.Run(); err != nil {
-		app.Logger.Fatal("Tasks server error", zap.Error(err))
+		logger.ErrorContext(ctx, "Tasks server error", "error", err)
+		os.Exit(1)
 	}
 
-	app.Logger.Info("Bye!")
+	logger.InfoContext(ctx, "Bye!")
 }

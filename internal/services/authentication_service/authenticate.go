@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 
 	"prutya/go-api-template/internal/logger"
 )
@@ -31,7 +30,7 @@ func (s *authenticationService) Authenticate(
 		// validation of the token based on the public key of the AS.
 		dbAccessToken, err := s.accessTokenRepo.FindById(ctx, claims.ID)
 		if err != nil {
-			logger.Warn("AccessToken not found", zap.String("access_token_id", claims.ID))
+			logger.WarnContext(ctx, "AccessToken not found", "access_token_id", claims.ID)
 
 			return nil, ErrAccessTokenNotFound
 		}

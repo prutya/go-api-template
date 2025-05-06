@@ -4,21 +4,21 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
-	"prutya/go-api-template/internal/logger"
+	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/tasks"
 )
 
 func (s *authenticationService) Login(ctx context.Context, email string, password string) (string, time.Time, string, error) {
-	logger := logger.MustFromContext(ctx)
+	logger := loggerpkg.MustFromContext(ctx)
 
 	// Prevent the potential attacker from measuring the response time
 	startTime := time.Now()
@@ -88,6 +88,9 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 		return "", time.Time{}, "", err
 	}
 
+	// Make sure that the refresh token secret is redacted in logs
+	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(refreshTokenSecret))
+
 	refreshTokenExpiresAt := time.Now().Add(s.config.AuthenticationRefreshTokenTTL)
 
 	if err := s.refreshTokenRepo.Create(
@@ -116,6 +119,9 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 	if err != nil {
 		return "", time.Time{}, "", err
 	}
+
+	// Make sure that the access token secret is redacted in logs
+	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(accessTokenSecret))
 
 	accessTokenExpiresAt := time.Now().Add(s.config.AuthenticationAccessTokenTTL)
 
@@ -177,7 +183,7 @@ func (s *authenticationService) Login(ctx context.Context, email string, passwor
 		return "", time.Time{}, "", err
 	}
 
-	logger.Debug("Scheduled task to greet user", zap.String("task_id", helloTaskInfo.ID))
+	logger.DebugContext(ctx, "Scheduled task to greet user", "task_id", helloTaskInfo.ID)
 
 	return refreshTokenString, refreshTokenExpiresAt, accessTokenString, nil
 }
