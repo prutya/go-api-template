@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+
 	"prutya/go-api-template/internal/app"
 	"prutya/go-api-template/internal/tasks_server"
 )

@@ -40,8 +40,10 @@ ENV GOOS=linux
 # other builds. This is faster than building the binaries in parallel.
 RUN go build -ldflags="-s -w" -o server ./cmd/server/main.go
 
-# Build the worker binary
-RUN go build -ldflags="-s -w" -o worker ./cmd/worker/main.go
+# Build the worker and scheduler binaries in parallel
+RUN go build -ldflags="-s -w" -o worker ./cmd/worker/main.go & \
+    go build -ldflags="-s -w" -o scheduler ./cmd/scheduler/main.go & \
+    wait
 
 # Create a non-root user
 RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
@@ -52,7 +54,11 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 FROM debian:bookworm-20250428-slim@sha256:4b50eb66f977b4062683ff434ef18ac191da862dbe966961bc11990cf5791a8d AS production
 
-RUN apt update && apt install -y ca-certificates curl && apt clean
+RUN echo "deb http://deb.debian.org/debian/ bookworm-backports main" | tee -a /etc/apt/sources.list && \
+  apt-get update && \
+  apt-get install --yes --no-install-recommends ca-certificates curl && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
