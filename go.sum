@@ -90,10 +90,10 @@ github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
 github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc h1:9lRDQMhESg+zvGYmW5DyG0UqvY96Bu5QYsTLvCHdrgo=
 github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc/go.mod h1:bciPuU6GHm1iF1pBvUfxfsH0Wmnc2VbpgvbI9ZWuIRs=
-github.com/uptrace/bun v1.2.11 h1:l9dTymsdZZAoSZ1+Qo3utms0RffgkDbIv+1UGk8N1wQ=
-github.com/uptrace/bun v1.2.11/go.mod h1:ww5G8h59UrOnCHmZ8O1I/4Djc7M/Z3E+EWFS2KLB6dQ=
-github.com/uptrace/bun/dialect/pgdialect v1.2.11 h1:n0VKWm1fL1dwJK5TRxYYLaRKRe14BOg2+AQgpvqzG/M=
-github.com/uptrace/bun/dialect/pgdialect v1.2.11/go.mod h1:NvV1S/zwtwBnW8yhJ3XEKAQEw76SkeH7yUhfrx3W1Eo=
+github.com/uptrace/bun v1.2.14 h1:5yFSfi/yVWEzQ2lAaHz+JfWN9AHmqYtNmlbaUbAp3rU=
+github.com/uptrace/bun v1.2.14/go.mod h1:ZS4nPaEv2Du3OFqAD/irk3WVP6xTB3/9TWqjJbgKYBU=
+github.com/uptrace/bun/dialect/pgdialect v1.2.14 h1:1jmCn7zcYIJDSk1pJO//b11k9NQP1rpWZoyxfoNdpzI=
+github.com/uptrace/bun/dialect/pgdialect v1.2.14/go.mod h1:MrRlsIpWIyOCNosWuG8bVtLb80JyIER5ci0VlTa38dU=
 github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
