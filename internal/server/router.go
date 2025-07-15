@@ -1,23 +1,22 @@
 package server
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid/v5"
 
 	"prutya/go-api-template/internal/config"
-	"prutya/go-api-template/internal/handlers/echo"
-	"prutya/go-api-template/internal/handlers/health"
-	"prutya/go-api-template/internal/handlers/panic_check"
-	"prutya/go-api-template/internal/handlers/sessions"
-	"prutya/go-api-template/internal/handlers/timeout_check"
+	"prutya/go-api-template/internal/handlers/account"
+	"prutya/go-api-template/internal/handlers/account/sessions"
 	"prutya/go-api-template/internal/handlers/users"
 	"prutya/go-api-template/internal/handlers/utils"
+	loggerpkg "prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
+	"prutya/go-api-template/internal/services/captcha_service"
+	"prutya/go-api-template/internal/services/transactional_email_service"
 	"prutya/go-api-template/internal/services/user_service"
 )
 
@@ -27,9 +26,11 @@ type Router struct {
 
 func NewRouter(
 	config *config.Config,
-	logger *slog.Logger,
+	logger *loggerpkg.Logger,
 	authenticationService authentication_service.AuthenticationService,
 	userService user_service.UserService,
+	transactionalEmailService transactional_email_service.TransactionalEmailService,
+	captchaService captcha_service.CaptchaService,
 ) *Router {
 	mux := chi.NewRouter()
 
@@ -58,79 +59,60 @@ func NewRouter(
 		utils.RenderError(w, r, utils.ErrMethodNotAllowed)
 	})
 
-	// Route-specific middleware
+	captchaCheckMiddleware := utils.NewCaptchaCheckMiddleware(captchaService)
 	authenticationMiddleware := utils.NewAuthenticationMiddleware(authenticationService)
 
+	// NOTE: Use this in the routes that require email verification
+	// emailVerificationCheckMiddleware := utils.NewEmailVerificationCheckMiddleware(authenticationService)
+
 	// API routes
-	mux.Post("/echo", echo.NewHandler())
-	mux.Get("/health", health.NewHandler())
-	mux.Get("/panic-check", panic_check.NewHandler())
-	mux.Mount("/sessions", newSessionsMux(config, authenticationMiddleware, authenticationService))
-	mux.Get("/timeout-check", timeout_check.NewHandler())
-	mux.Mount("/users", newUsersMux(config, authenticationMiddleware, userService))
+
+	// /account
+
+	mux.Route("/account", func(r chi.Router) {
+		r.Post("/refresh-session", account.NewRefreshSessionHandler(config, authenticationService))
+		r.Post("/verify-email", account.NewVerifyEmailHandler(config, authenticationService))
+		r.Post("/reset-password", account.NewResetPasswordHandler(authenticationService))
+
+		r.Group(func(r chi.Router) {
+			r.Use(captchaCheckMiddleware)
+
+			r.Post("/login", account.NewLoginHandler(config, authenticationService))
+			r.Post("/register", account.NewRegisterHandler(authenticationService))
+			r.Post("/request-email-verification", account.NewRequestEmailVerificationHandler(authenticationService))
+			r.Post("/request-password-reset", account.NewRequestPasswordResetHandler(authenticationService))
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(authenticationMiddleware)
+
+			r.Post("/logout", account.NewLogoutHandler(config, authenticationService))
+			r.Post("/change-password", account.NewChangePasswordHandler(config, authenticationService))
+			r.Post("/delete-account", account.NewDeleteAccountHandler(config, authenticationService))
+
+			r.Route("/sessions", func(r chi.Router) {
+				r.Get("/", sessions.NewSessionsListHandler(authenticationService))
+				r.Delete("/{sessionID}", sessions.NewSessionsTerminateHandler(config, authenticationService))
+			})
+		})
+	})
+
+	// /users
+
+	mux.Route("/users", func(r chi.Router) {
+		r.Use(authenticationMiddleware)
+
+		r.Get("/current", users.NewCurrentHandler(userService))
+	})
 
 	return &Router{mux: mux}
 }
 
 func generateRequestID(r *http.Request) (string, error) {
-	val, err := uuid.NewRandom()
+	val, err := uuid.NewV7()
 	if err != nil {
 		return "", err
 	}
 
 	return val.String(), nil
-}
-
-func newSessionsMux(
-	config *config.Config,
-	authenticationMiddleware func(next http.Handler) http.Handler,
-	authenticationService authentication_service.AuthenticationService,
-) *chi.Mux {
-	m := chi.NewRouter()
-
-	m.Post("/", sessions.NewCreateHandler(config, authenticationService))
-	m.Post("/refresh", sessions.NewRefreshHandler(config, authenticationService))
-	m.Mount("/current", newSessionsCurrentMux(config, authenticationMiddleware, authenticationService))
-
-	return m
-}
-
-func newSessionsCurrentMux(
-	config *config.Config,
-	authenticationMiddleware func(next http.Handler) http.Handler,
-	authenticationService authentication_service.AuthenticationService,
-) *chi.Mux {
-	m := chi.NewRouter()
-
-	m.Use(authenticationMiddleware)
-
-	m.Delete("/", sessions.NewDeleteCurrentHandler(config, authenticationService))
-
-	return m
-}
-
-func newUsersMux(
-	config *config.Config,
-	authenticationMiddleware func(next http.Handler) http.Handler,
-	userService user_service.UserService,
-) *chi.Mux {
-	m := chi.NewRouter()
-
-	m.Mount("/current", newUsersCurrentMux(config, authenticationMiddleware, userService))
-
-	return m
-}
-
-func newUsersCurrentMux(
-	config *config.Config,
-	authenticationMiddleware func(next http.Handler) http.Handler,
-	userService user_service.UserService,
-) *chi.Mux {
-	m := chi.NewRouter()
-
-	m.Use(authenticationMiddleware)
-
-	m.Get("/", users.NewShowCurrentHandler(config, userService))
-
-	return m
 }

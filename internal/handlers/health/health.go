@@ -6,10 +6,10 @@ import (
 	"prutya/go-api-template/internal/handlers/utils"
 )
 
-func NewHandler() http.HandlerFunc {
-	messageOk := []byte(`{"health":"ok"}`)
+var MessageOK = []byte(`{"health":"ok"}`)
 
+func NewHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		utils.RenderRawJson(w, r, messageOk, http.StatusOK, nil)
+		utils.RenderRawJson(w, r, MessageOK, http.StatusOK, nil)
 	}
 }

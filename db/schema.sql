@@ -50,6 +50,68 @@ CREATE TABLE public.access_tokens (
 
 
 --
+-- Name: email_send_attempts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_send_attempts (
+    id integer NOT NULL,
+    attempted_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: email_send_attempts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.email_send_attempts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: email_send_attempts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.email_send_attempts_id_seq OWNED BY public.email_send_attempts.id;
+
+
+--
+-- Name: email_verification_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_verification_tokens (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    secret bytea NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    sent_at timestamp with time zone,
+    verified_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.password_reset_tokens (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    secret bytea NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    sent_at timestamp with time zone,
+    reset_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: refresh_tokens; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -85,7 +147,10 @@ CREATE TABLE public.sessions (
     user_id uuid NOT NULL,
     terminated_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    user_agent text,
+    ip_address text,
+    expires_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -98,8 +163,18 @@ CREATE TABLE public.users (
     email text NOT NULL,
     password_digest text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    email_verification_rate_limited_until timestamp with time zone,
+    email_verified_at timestamp with time zone,
+    password_reset_rate_limited_until timestamp with time zone
 );
+
+
+--
+-- Name: email_send_attempts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_send_attempts ALTER COLUMN id SET DEFAULT nextval('public.email_send_attempts_id_seq'::regclass);
 
 
 --
@@ -108,6 +183,30 @@ CREATE TABLE public.users (
 
 ALTER TABLE ONLY public.access_tokens
     ADD CONSTRAINT access_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_send_attempts email_send_attempts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_send_attempts
+    ADD CONSTRAINT email_send_attempts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_verification_tokens email_verification_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_verification_tokens
+    ADD CONSTRAINT email_verification_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.password_reset_tokens
+    ADD CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (id);
 
 
 --
@@ -150,6 +249,34 @@ CREATE INDEX access_tokens_refresh_token_id_idx ON public.access_tokens USING bt
 
 
 --
+-- Name: email_send_attempts_attempted_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX email_send_attempts_attempted_at_idx ON public.email_send_attempts USING btree (attempted_at);
+
+
+--
+-- Name: email_verification_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX email_verification_tokens_user_id_idx ON public.email_verification_tokens USING btree (user_id);
+
+
+--
+-- Name: idx_sessions_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sessions_user_id ON public.sessions USING btree (user_id);
+
+
+--
+-- Name: password_reset_tokens_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX password_reset_tokens_user_id_idx ON public.password_reset_tokens USING btree (user_id);
+
+
+--
 -- Name: refresh_tokens_parent_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -176,6 +303,22 @@ CREATE UNIQUE INDEX users_email_unique_idx ON public.users USING btree (lower(em
 
 ALTER TABLE ONLY public.access_tokens
     ADD CONSTRAINT access_tokens_refresh_token_id_fkey FOREIGN KEY (refresh_token_id) REFERENCES public.refresh_tokens(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: email_verification_tokens email_verification_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_verification_tokens
+    ADD CONSTRAINT email_verification_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: password_reset_tokens password_reset_tokens_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.password_reset_tokens
+    ADD CONSTRAINT password_reset_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -216,4 +359,8 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250326192425'),
     ('20250402154324'),
     ('20250402212612'),
-    ('20250408124828');
+    ('20250408124828'),
+    ('20250417120918'),
+    ('20250420214203'),
+    ('20250421212749'),
+    ('20250516133132');

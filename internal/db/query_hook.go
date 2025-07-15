@@ -8,7 +8,7 @@ import (
 
 	"github.com/uptrace/bun"
 
-	loggerpkg "prutya/go-api-template/internal/logger"
+	internal_logger "prutya/go-api-template/internal/logger"
 )
 
 type QueryHook struct {
@@ -20,7 +20,7 @@ func (qh QueryHook) BeforeQuery(ctx context.Context, event *bun.QueryEvent) cont
 }
 
 func (qh QueryHook) AfterQuery(ctx context.Context, event *bun.QueryEvent) {
-	logger := loggerpkg.MustFromContext(ctx)
+	logger := internal_logger.MustFromContext(ctx)
 
 	queryDuration := time.Since(event.StartTime)
 	query := event.Query

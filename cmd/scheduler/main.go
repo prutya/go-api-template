@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"prutya/go-api-template/internal/app"
 	"prutya/go-api-template/internal/tasks_scheduler"
 )
@@ -18,13 +16,11 @@ func main() {
 		cfg.TasksRedisPassword,
 	)
 	if err != nil {
-		logger.ErrorContext(ctx, "Failed to create scheduler", "error", err)
-		os.Exit(1)
+		logger.FatalContext(ctx, "Failed to create scheduler", "error", err)
 	}
 
 	if err := scheduler.Run(); err != nil {
-		logger.ErrorContext(ctx, "Scheduler start error", "error", err)
-		os.Exit(1)
+		logger.FatalContext(ctx, "Scheduler start error", "error", err)
 	}
 
 	logger.InfoContext(ctx, "Bye!")

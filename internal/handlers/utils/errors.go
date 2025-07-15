@@ -6,15 +6,27 @@ const ErrCodeNotFound = "not_found"
 const ErrCodeMethodNotAllowed = "method_not_allowed"
 const ErrCodeInternal = "internal_error"
 const ErrCodeInvalidJson = "invalid_json"
+const ErrCodeInvalidQuery = "invalid_query"
+const ErrCodeUnauthorized = "unauthorized"
+const ErrCodeConflict = "conflict"
+const ErrCodeUnprocessableContent = "unprocessable_content"
 const ErrCodeInvalidParams = "invalid_params"
 const ErrCodeTimeout = "timeout"
-const ErrCodeUnauthorized = "unauthorized"
+const ErrCodeInvalidPayload = "invalid_payload"
+const ErrCodeInvalidCaptcha = "invalid_captcha"
+const ErrCodeTooManyRequests = "too_many_requests"
 
 var ErrNotFound = NewServerError(ErrCodeNotFound, http.StatusNotFound)
 var ErrMethodNotAllowed = NewServerError(ErrCodeMethodNotAllowed, http.StatusMethodNotAllowed)
 var ErrInvalidJson = NewServerError(ErrCodeInvalidJson, http.StatusBadRequest)
-var ErrTimeout = NewServerError(ErrCodeTimeout, http.StatusGatewayTimeout)
+var ErrInvalidQuery = NewServerError(ErrCodeInvalidQuery, http.StatusBadRequest)
 var ErrUnauthorized = NewServerError(ErrCodeUnauthorized, http.StatusUnauthorized)
+var ErrConflict = NewServerError(ErrCodeConflict, http.StatusConflict)
+var ErrUnprocessableContent = NewServerError(ErrCodeUnprocessableContent, http.StatusUnprocessableEntity)
+var ErrInvalidPayload = NewServerError(ErrCodeInvalidPayload, http.StatusUnprocessableEntity)
+var ErrInvalidCaptcha = NewServerError(ErrCodeInvalidCaptcha, http.StatusUnprocessableEntity)
+var ErrTimeout = NewServerError(ErrCodeTimeout, http.StatusGatewayTimeout)
+var ErrTooManyRequests = NewServerError(ErrCodeTooManyRequests, http.StatusTooManyRequests)
 
 type ServerError struct {
 	HttpStatusCode int

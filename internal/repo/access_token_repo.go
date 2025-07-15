@@ -1,5 +1,3 @@
-// TODO: Test
-
 package repo
 
 import (

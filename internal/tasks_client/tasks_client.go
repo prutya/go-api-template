@@ -5,6 +5,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/tasks"
 )
 
@@ -35,11 +36,17 @@ func (c *client) Ping() error {
 }
 
 func (c *client) Enqueue(ctx context.Context, task *tasks.Task) (*tasks.TaskInfo, error) {
-	asynqTaskInfo, err := c.asynqClient.EnqueueContext(ctx, task.AsynqTask)
+	logger := logger.MustFromContext(ctx)
+	taskType := task.AsynqTask.Type()
 
+	logger.DebugContext(ctx, "Enqueueing task", "task_type", taskType)
+
+	asynqTaskInfo, err := c.asynqClient.EnqueueContext(ctx, task.AsynqTask)
 	if err != nil {
 		return nil, err
 	}
+
+	logger.InfoContext(ctx, "Enqueued task", "task_id", asynqTaskInfo.ID, "task_type", asynqTaskInfo.Type)
 
 	return tasks.NewTaskInfo(asynqTaskInfo), nil
 }

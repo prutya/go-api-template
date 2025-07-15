@@ -7,7 +7,8 @@ import (
 	"github.com/hibiken/asynq"
 
 	loggerpkg "prutya/go-api-template/internal/logger"
-	"prutya/go-api-template/internal/services/user_service"
+	"prutya/go-api-template/internal/services/authentication_service"
+	"prutya/go-api-template/internal/services/transactional_email_service"
 	"prutya/go-api-template/internal/tasks"
 )
 
@@ -25,7 +26,8 @@ func NewServer(
 	baseCtx context.Context,
 	redisAddr string,
 	redisPassword string,
-	userService user_service.UserService,
+	authenticationService authentication_service.AuthenticationService,
+	transactionalEmailService transactional_email_service.TransactionalEmailService,
 ) Server {
 	logger := loggerpkg.MustFromContext(baseCtx)
 
@@ -43,7 +45,9 @@ func NewServer(
 
 	mux := asynq.NewServeMux()
 	mux.Use(loggingMiddleware)
-	mux.Handle(tasks.TypeUserHello, newUserHelloTaskHandler(userService))
+	mux.Handle(tasks.TypeCleanupEmailSendAttempts, newCleanupEmailSendAttemptsHandler(transactionalEmailService))
+	mux.Handle(tasks.TypeSendVerificationEmail, newSendVerificationEmailTaskHandler(authenticationService))
+	mux.Handle(tasks.TypeSendPasswordResetEmail, newSendPasswordResetEmailTaskHandler(authenticationService))
 
 	return &server{
 		asynqServer: srv,

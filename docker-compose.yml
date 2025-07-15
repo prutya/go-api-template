@@ -18,7 +18,6 @@ x-shared-configuration:
       REDIS_PASSWORD: app_redis_password
 
 services:
-
   dbmate:
     <<: [*dbmate]
     environment:
@@ -58,6 +57,8 @@ services:
     <<: [*redis]
     ports:
       - 6379:6379
+    volumes:
+      - redis_data:/bitnami/redis/data
     networks:
       - app_dev
     healthcheck:
@@ -65,6 +66,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+      start_interval: 1s
 
   redis_cli:
     <<: [*redis]
@@ -81,6 +84,19 @@ services:
       - .:/app
     working_dir: /app
     command: ["golangci-lint", "run", "--verbose"]
+
+  asynqmon:
+    image: docker.io/hibiken/asynqmon:0.7.2
+    ports:
+      - 8080:8080
+    environment:
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: app_redis_password
+    networks:
+      - app_dev
+    depends_on:
+      redis:
+        condition: service_healthy
 
   test:
     build:

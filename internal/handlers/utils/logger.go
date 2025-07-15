@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -19,7 +18,7 @@ type responseInfoContextKeyType struct{}
 
 var responseInfoContextKey = responseInfoContextKeyType{}
 
-func NewLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
+func NewLoggerMiddleware(logger *loggerpkg.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			requestLogger := logger
@@ -73,7 +72,7 @@ func NewLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-func SetRequestLogger(r *http.Request, logger *slog.Logger) *http.Request {
+func SetRequestLogger(r *http.Request, logger *loggerpkg.Logger) *http.Request {
 	ctxWithLogger := loggerpkg.NewContext(r.Context(), logger)
 
 	return r.WithContext(ctxWithLogger)

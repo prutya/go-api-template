@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-
 	"prutya/go-api-template/internal/app"
 	"prutya/go-api-template/internal/tasks_server"
 )
@@ -16,12 +14,12 @@ func main() {
 		ctx,
 		cfg.TasksRedisAddr,
 		cfg.TasksRedisPassword,
-		app.UserService,
+		app.AuthenticationService,
+		app.TransactionalEmailService,
 	)
 
 	if err := tasksServer.Run(); err != nil {
-		logger.ErrorContext(ctx, "Tasks server error", "error", err)
-		os.Exit(1)
+		logger.FatalContext(ctx, "Worker start error", "error", err)
 	}
 
 	logger.InfoContext(ctx, "Bye!")

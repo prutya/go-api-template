@@ -37,13 +37,21 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 
 # Build the server binary first, so that the build cache can be reused by the
-# other builds. This is faster than building the binaries in parallel.
-RUN go build -ldflags="-s -w" -o server ./cmd/server/main.go
+# other builds
+# TODO: Use the release build command when the code is stable
+RUN go build -tags=debug -o server ./cmd/server/main.go
+# RUN go build -ldflags="-s -w" -o server ./cmd/server/main.go
 
 # Build the worker and scheduler binaries in parallel
-RUN go build -ldflags="-s -w" -o worker ./cmd/worker/main.go & \
-    go build -ldflags="-s -w" -o scheduler ./cmd/scheduler/main.go & \
+# NOTE: This is of course not ideal, in the real world you would probably want
+# to build separate images for worker and scheduler.
+# TODO: Use the release build command when the code is stable
+RUN go build -tags=debug -o worker ./cmd/worker/main.go & \
+    go build -tags=debug -o scheduler ./cmd/scheduler/main.go & \
     wait
+# RUN go build -ldflags="-s -w" -o worker ./cmd/worker/main.go & \
+#     go build -ldflags="-s -w" -o scheduler ./cmd/scheduler/main.go & \
+#     wait
 
 # Create a non-root user
 RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
@@ -54,16 +62,16 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 FROM debian:bookworm-20250428-slim@sha256:4b50eb66f977b4062683ff434ef18ac191da862dbe966961bc11990cf5791a8d AS production
 
-RUN echo "deb http://deb.debian.org/debian/ bookworm-backports main" | tee -a /etc/apt/sources.list && \
-  apt-get update && \
-  apt-get install --yes --no-install-recommends ca-certificates curl && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY --from=build_production /app/server .
 COPY --from=build_production /app/worker .
+COPY --from=build_production /app/scheduler .
+COPY ./config ./config
 
 # Prepare the config file
 RUN echo "{}" > app.json

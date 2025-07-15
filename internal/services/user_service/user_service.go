@@ -7,26 +7,32 @@ import (
 
 	"prutya/go-api-template/internal/models"
 	"prutya/go-api-template/internal/repo"
-)
 
-type UserService interface {
-	GetUserByID(ctx context.Context, id string) (*models.User, error)
-}
+	"github.com/uptrace/bun"
+)
 
 var ErrUserNotFound = errors.New("user not found")
 
-type userService struct {
-	userRepo repo.UserRepo
+type UserService interface {
+	FindByID(ctx context.Context, id string) (*models.User, error)
 }
 
-func NewUserService(userRepo repo.UserRepo) UserService {
+type userService struct {
+	db          bun.IDB
+	repoFactory repo.RepoFactory
+}
+
+func NewUserService(db bun.IDB, repoFactory repo.RepoFactory) UserService {
 	return &userService{
-		userRepo: userRepo,
+		db:          db,
+		repoFactory: repoFactory,
 	}
 }
 
-func (s *userService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
-	user, err := s.userRepo.FindById(ctx, id)
+func (s *userService) FindByID(ctx context.Context, id string) (*models.User, error) {
+	userRepo := s.repoFactory.NewUserRepo(s.db)
+
+	user, err := userRepo.FindByID(ctx, id)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -36,5 +42,5 @@ func (s *userService) GetUserByID(ctx context.Context, id string) (*models.User,
 		return nil, err
 	}
 
-	return user, err
+	return user, nil
 }

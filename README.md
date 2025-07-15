@@ -14,12 +14,9 @@ An opinionated DIY template for Golang JSON API applications
 - [x] CORS middleware ([chi](https://github.com/go-chi/cors))
 - [x] Compatibility with standard library (net/http) middleware
 - [x] Error handling
-- [x] Healthcheck endpoint `/health`
 - [x] Secure Configurable Authentication (based on Refresh Tokens)
-- [x] Sign In endpoint – `POST /sessions`
-- [x] Sign Out endpoint – `DELETE /sessions/current`
-- [x] Get current User endpoint – `GET /users/current`
-- [x] Refresh Access Token endpoint – `POST /sessions/refresh`
+- [x] Transactional Emails via [Scaleway](https://www.scaleway.com/)
+- [x] CAPTCHA via [Cloudflare Turnstile](https://www.cloudflare.com/application-services/products/turnstile/)
 
 ### Database
 - [x] ORM ([bun](https://github.com/uptrace/bun))

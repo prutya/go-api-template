@@ -51,7 +51,7 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 			ctx = NewContextWithAccessTokenClaims(ctx, accessTokenClaims)
 			r = r.WithContext(ctx)
 
-			logger.Info("User authenticated", "user_id", accessTokenClaims.UserID)
+			logger.InfoContext(ctx, "User authenticated", "user_id", accessTokenClaims.UserID)
 
 			next.ServeHTTP(w, r)
 		}

@@ -23,7 +23,7 @@ func NewRecoverMiddleware() func(next http.Handler) http.Handler {
 				}
 
 				logger := internal_logger.MustFromContext(r.Context())
-				logger.Error("Recovered from panic")
+				logger.ErrorContext(r.Context(), "Recovered from panic", "panic", rvr)
 
 				RenderError(w, r, NewServerError(ErrCodeInternal, http.StatusInternalServerError))
 			}()

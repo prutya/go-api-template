@@ -34,16 +34,13 @@ func NewScheduler(
 		},
 	)
 
-	// This is the place to register all the tasks that should be scheduled.
-	//
-	// For example:
-	// // Cleanup every day at 02:00
-	// if _, err := asynqScheduler.Register(
-	// 	"0 2 * * *",
-	// 	asynq.NewTask(tasks.TypeMyCleanup, nil),
-	// ); err != nil {
-	// 	return nil, err
-	// }
+	// Cleanup email send attempts ever day at 02:00
+	if _, err := asynqScheduler.Register(
+		"0 2 * * *",
+		asynq.NewTask(tasks.TypeCleanupEmailSendAttempts, nil),
+	); err != nil {
+		return nil, err
+	}
 
 	return &scheduler{
 		asynqScheduler: asynqScheduler,

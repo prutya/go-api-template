@@ -9,11 +9,13 @@ import (
 	"prutya/go-api-template/internal/logger"
 )
 
+// NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) Authenticate(
 	ctx context.Context,
 	accessToken string,
 ) (*AccessTokenClaims, error) {
 	logger := logger.MustFromContext(ctx)
+	accessTokenRepo := s.repoFactory.NewAccessTokenRepo(s.db)
 
 	// Parse the token
 	parsedToken, err := jwt.ParseWithClaims(accessToken, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -28,7 +30,7 @@ func (s *authenticationService) Authenticate(
 		// NOTE: In a scenario when the Relying Party (RP) and the
 		// Authorization Server (AS) are separate, this should be replaced with
 		// validation of the token based on the public key of the AS.
-		dbAccessToken, err := s.accessTokenRepo.FindById(ctx, claims.ID)
+		dbAccessToken, err := accessTokenRepo.FindById(ctx, claims.ID)
 		if err != nil {
 			logger.WarnContext(ctx, "AccessToken not found", "access_token_id", claims.ID)
 

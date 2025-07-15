@@ -2,188 +2,77 @@ package authentication_service
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"errors"
-	"strings"
-	"time"
 
-	"github.com/gofrs/uuid/v5"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"
-
-	loggerpkg "prutya/go-api-template/internal/logger"
-	"prutya/go-api-template/internal/tasks"
 )
 
-func (s *authenticationService) Login(ctx context.Context, email string, password string) (string, time.Time, string, error) {
-	logger := loggerpkg.MustFromContext(ctx)
+// NOTE: I am not using transactions here, because it's fine if there's a
+// session, refresh token or access token inserted without the rest of the
+// records
+func (s *authenticationService) Login(
+	ctx context.Context,
+	email string,
+	password string,
+	userAgent string,
+	ipAddress string,
+) (*CreateTokensResult, error) {
+	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
 
-	// Prevent the potential attacker from measuring the response time
-	startTime := time.Now()
+	// Normalize the email
+	email = normalizeEmail(email)
 
-	defer func() {
-		duration := time.Since(startTime)
-		timeLeft := s.config.AuthenticationTimingAttackDelay - duration
-
-		if timeLeft > 0 {
-			time.Sleep(timeLeft)
-		}
-	}()
-
-	normalizedEmail := strings.ToLower(email)
+	userRepo := s.repoFactory.NewUserRepo(s.db)
 
 	// Find the user by email
-
-	user, err := s.userRepo.FindByEmail(ctx, normalizedEmail)
-
+	user, err := userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", time.Time{}, "", ErrInvalidCredentials
+			return nil, ErrInvalidCredentials
 		}
 
-		return "", time.Time{}, "", err
+		return nil, err
 	}
 
 	// Check if the password is correct
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password))
-
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", time.Time{}, "", ErrInvalidCredentials
+			return nil, ErrInvalidCredentials
 		}
 
-		return "", time.Time{}, "", err
+		return nil, err
 	}
 
-	// Create a session
+	var createTokensResult *CreateTokensResult
 
-	sessionIdUUID, err := uuid.NewV7()
-	if err != nil {
-		return "", time.Time{}, "", err
+	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		sessionRepo := s.repoFactory.NewSessionRepo(tx)
+		refreshTokenRepo := s.repoFactory.NewRefreshTokenRepo(tx)
+		accessTokenRepo := s.repoFactory.NewAccessTokenRepo(tx)
+
+		// Create a session
+		createTokensResult_tx, err := s.createSession(
+			ctx,
+			sessionRepo,
+			refreshTokenRepo,
+			accessTokenRepo,
+			user,
+			userAgent,
+			ipAddress,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		createTokensResult = createTokensResult_tx
+
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	sessionId := sessionIdUUID.String()
-
-	err = s.sessionRepo.Create(ctx, sessionId, user.ID)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Create a RefreshToken
-
-	refreshTokenUUID, err := uuid.NewV7()
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	refreshTokenId := refreshTokenUUID.String()
-
-	refreshTokenSecret := make([]byte, s.config.AuthenticationRefreshTokenSecretLength)
-
-	_, err = rand.Read(refreshTokenSecret)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Make sure that the refresh token secret is redacted in logs
-	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(refreshTokenSecret))
-
-	refreshTokenExpiresAt := time.Now().Add(s.config.AuthenticationRefreshTokenTTL)
-
-	if err := s.refreshTokenRepo.Create(
-		ctx,
-		refreshTokenId,
-		sessionId,
-		sql.NullString{},
-		refreshTokenSecret,
-		refreshTokenExpiresAt,
-	); err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Create an AccessToken
-
-	accessTokenUUID, err := uuid.NewV7()
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	accessTokenId := accessTokenUUID.String()
-
-	accessTokenSecret := make([]byte, s.config.AuthenticationAccessTokenSecretLength)
-
-	_, err = rand.Read(accessTokenSecret)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Make sure that the access token secret is redacted in logs
-	ctx = loggerpkg.NewContextWithRedactedSecret(ctx, hex.EncodeToString(accessTokenSecret))
-
-	accessTokenExpiresAt := time.Now().Add(s.config.AuthenticationAccessTokenTTL)
-
-	if err := s.accessTokenRepo.Create(
-		ctx,
-		accessTokenId,
-		refreshTokenId,
-		accessTokenSecret,
-		accessTokenExpiresAt,
-	); err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Create a JWT for the refresh token
-	refreshTokenClaims := RefreshTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        refreshTokenId,
-			ExpiresAt: jwt.NewNumericDate(refreshTokenExpiresAt),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		UserID: user.ID,
-	}
-
-	refreshTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
-
-	refreshTokenString, err := refreshTokenJWT.SignedString(refreshTokenSecret)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// Create a JWT for the access token
-
-	accessTokenClaims := AccessTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        accessTokenId,
-			ExpiresAt: jwt.NewNumericDate(accessTokenExpiresAt),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		UserID: user.ID,
-	}
-
-	accessTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
-
-	accessTokenString, err := accessTokenJWT.SignedString(accessTokenSecret)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	// For demo purposes, we will schedule a job to greet the user
-	helloTask, err := tasks.NewUserHelloTask(user.ID)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	helloTaskInfo, err := s.tasksClient.Enqueue(ctx, helloTask)
-	if err != nil {
-		return "", time.Time{}, "", err
-	}
-
-	logger.DebugContext(ctx, "Scheduled task to greet user", "task_id", helloTaskInfo.ID)
-
-	return refreshTokenString, refreshTokenExpiresAt, accessTokenString, nil
+	return createTokensResult, nil
 }
