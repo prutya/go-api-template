@@ -94,6 +94,15 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 go run cmd/worker/main.go
 ```
 
+## Running the background jobs scheduler (CRON-like) locally
+
+### 1. Set up the database
+Make sure that steps 1-4 from **Running the app locally** are completed
+
+### 2. Start the scheduler
+```sh
+go run cmd/scheduler/main.go
+
 ## Running tests
 
 ```sh
@@ -107,7 +116,7 @@ docker compose run --build --rm lint
 
 ## Building the production image
 
-Both server and worker binaries will be in the same image
+Server, worker and scheduler binaries will be in the same image
 
 ```sh
 docker build . --tag go-api-template:latest
