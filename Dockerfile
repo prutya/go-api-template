@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.24.2-bookworm@sha256:79390b5e5af9ee6e7b1173ee3eac7fadf6751a545297672916b59bfa0ecf6f71 AS base
+FROM golang:1.24.5 AS base
 
 
 
@@ -60,7 +60,7 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 ##### Final production image ####
 
-FROM debian:bookworm-20250428-slim@sha256:4b50eb66f977b4062683ff434ef18ac191da862dbe966961bc11990cf5791a8d AS production
+FROM debian:bookworm-20250630-slim AS production
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl && \
