@@ -23,15 +23,16 @@ func New(levelStr string, format string) (*Logger, error) {
 
 	var baseHandler slog.Handler
 
-	if format == "text" {
+	switch format {
+	case "text":
 		baseHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: level,
 		})
-	} else if format == "json" {
+	case "json":
 		baseHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: level,
 		})
-	} else {
+	default:
 		return nil, ErrUnknownLogFormat
 	}
 

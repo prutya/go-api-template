@@ -18,24 +18,22 @@ func (s *authenticationService) GetActiveSessionsForUser(
 	var cursorSession *models.Session
 
 	if beforeCursor != nil {
-		cursorActionDb, err := sessionRepo.TryFindByID(ctx, *beforeCursor)
+		cursorSessionDb, err := sessionRepo.TryFindByID(ctx, *beforeCursor)
 
 		if err != nil {
 			return nil, false, err
 		}
 
 		// If the cursor does not exist, do not apply the filter
-		if cursorActionDb == nil {
+		if cursorSessionDb == nil {
 			logger.MustFromContext(ctx).WarnContext(
 				ctx,
 				"Cursor session does not exist, ignoring filter",
 				"user_id", userID,
 				"session_id", *beforeCursor,
 			)
-
-			beforeCursor = nil
 		} else {
-			cursorSession = cursorActionDb
+			cursorSession = cursorSessionDb
 		}
 	}
 

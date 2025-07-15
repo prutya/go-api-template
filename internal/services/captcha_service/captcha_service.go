@@ -57,8 +57,6 @@ func NewCaptchaService(
 	}
 }
 
-const turnstileInternalErrorCode = "internal-error"
-
 type turnstileRequest struct {
 	Secret   string `json:"secret"`
 	Response string `json:"response"`
