@@ -37,6 +37,7 @@ An opinionated DIY template for Golang JSON API applications
 ### Development and deployment
 - [x] Docker Compose setup for development
 - [x] Multi-stage Dockerfile
+- [x] Hot-reload via [Air](https://github.com/air-verse/air)
 
 ## Prerequisites
 
@@ -45,33 +46,41 @@ An opinionated DIY template for Golang JSON API applications
 
 ## Running the app locally
 
-### 1. Install the packages
+### 1. Install developer tools
+```sh
+./setup-dev.sh
+```
+
+### 2. Install packages
 
 ```sh
 go mod download
 ```
 
-### 2. Start the database and Redis servers
+### 3. Start database and Redis servers
 
 ```sh
 docker compose up postgres redis
 ```
 
-### 3. Run the database migrations
+### 4. Run database migrations
 
 ```sh
 docker compose run --rm dbmate migrate
 ```
 
-### 4. Seed the database
+### 5. Seed the database
 
 ```sh
 docker compose run --rm psql --echo-all --file /db/seed.sql
 ```
 
-### 5. Start the app
+### 6. Start the app
 
 ```sh
+air -c ./.air.server.toml
+
+# Or
 go run cmd/server/main.go
 ```
 
@@ -91,6 +100,9 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 
 ### 2. Start the worker
 ```sh
+air -c ./.air.worker.toml
+
+# Or
 go run cmd/worker/main.go
 ```
 
@@ -101,7 +113,11 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 
 ### 2. Start the scheduler
 ```sh
+air -c ./.air.scheduler.toml
+
+# Or
 go run cmd/scheduler/main.go
+```
 
 ## Running tests
 
