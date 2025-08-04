@@ -12,8 +12,8 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.34
 	github.com/spf13/viper v1.20.1
-	github.com/uptrace/bun v1.2.14
-	github.com/uptrace/bun/dialect/pgdialect v1.2.14
+	github.com/uptrace/bun v1.2.15
+	github.com/uptrace/bun/dialect/pgdialect v1.2.15
 	golang.org/x/crypto v0.40.0
 )
 
