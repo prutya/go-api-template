@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.24.5 AS base
+FROM golang:1.25.0 AS base
 
 
 
@@ -60,7 +60,7 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 ##### Final production image ####
 
-FROM debian:bookworm-20250630-slim AS production
+FROM debian:bookworm-20250811-slim AS production
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl && \
