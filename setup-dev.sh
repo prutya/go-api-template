@@ -2,6 +2,6 @@
 
 set -exo pipefail
 
-AIR_VERSION=v1.62.0
+AIR_VERSION=v1.63.0
 
 go install "github.com/air-verse/air@$AIR_VERSION"

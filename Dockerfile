@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.25.0 AS base
+FROM golang:1.25.1-trixie AS base
 
 
 
