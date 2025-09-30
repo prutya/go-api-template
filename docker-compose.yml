@@ -6,14 +6,14 @@ x-shared-configuration:
       - "./db:/db"
 
   postgres: &postgres
-    image: docker.io/postgres:17.6-alpine3.22
+    image: docker.io/postgres:18.0-alpine3.22
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
 
   redis: &redis
-    image: docker.io/redis:8.2.0-alpine3.22
+    image: docker.io/redis:8.2.1-alpine3.22
     environment:
       REDIS_PASSWORD: app_redis_password
 
@@ -33,7 +33,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/18/docker
     networks:
       - app_dev
     healthcheck:
@@ -128,7 +128,7 @@ services:
   postgres_test:
     <<: [*postgres]
     volumes:
-      - postgres_test_data:/var/lib/postgresql/data
+      - postgres_test_data:/var/lib/postgresql/18/docker
     networks:
       - app_test
     healthcheck:
