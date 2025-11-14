@@ -3,7 +3,6 @@ package authentication_service
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -15,7 +14,6 @@ type CreateTokensResult struct {
 	RefreshToken          string
 	RefreshTokenExpiresAt time.Time
 	AccessToken           string
-	CSRFToken             string
 }
 
 // This function assumes that the user has already been authenticated either
@@ -79,18 +77,7 @@ func (s *authenticationService) createTokens(
 		return nil, err
 	}
 
-	// TODO: Extract the CSRF, JWT generation into separate functions?
-
-	// Generate a CSRF token
-	csrfToken, err := generateSecret(s.config.AuthenticationCSRFTokenLength)
-	if err != nil {
-		return nil, err
-	}
-
-	// Encode the CSRF token as a hex string so that it can be used in a JWT
-	// NOTE: Why not Base64? I have encountered issues with Base64 encoding
-	// between client and server in the past, so I prefer hex.
-	csrfTokenString := hex.EncodeToString(csrfToken)
+	// TODO: Extract JWT generation into separate functions?
 
 	// Create a JWT for the refresh token
 	refreshTokenClaims := RefreshTokenClaims{
@@ -100,8 +87,7 @@ func (s *authenticationService) createTokens(
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		UserID:    userId,
-		CSRFToken: csrfTokenString,
+		UserID: userId,
 	}
 	refreshTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
 	refreshTokenString, err := refreshTokenJWT.SignedString(refreshTokenSecret)
@@ -129,6 +115,5 @@ func (s *authenticationService) createTokens(
 		RefreshToken:          refreshTokenString,
 		RefreshTokenExpiresAt: refreshTokenExpiresAt,
 		AccessToken:           accessTokenString,
-		CSRFToken:             csrfTokenString,
 	}, nil
 }

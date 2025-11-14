@@ -28,12 +28,10 @@ var ErrRefreshTokenRevoked = errors.New("refresh token revoked")
 var ErrSessionNotFound = errors.New("session not found")
 var ErrSessionAlreadyTerminated = errors.New("session already terminated")
 var ErrSessionExpired = errors.New("session expired")
-var ErrCSRFTokenMismatch = errors.New("CSRF token mismatch")
 
 type RefreshTokenClaims struct {
 	jwt.RegisteredClaims
-	UserID    string `json:"userId"`
-	CSRFToken string `json:"csrfToken"`
+	UserID string `json:"userId"`
 }
 
 type AccessTokenClaims struct {
@@ -70,7 +68,7 @@ type AuthenticationService interface {
 		ipAddress string,
 	) (*CreateTokensResult, error)
 	Authenticate(ctx context.Context, accessToken string) (*AccessTokenClaims, error)
-	Refresh(ctx context.Context, refreshToken string, clientCSRFToken string) (*CreateTokensResult, error)
+	Refresh(ctx context.Context, refreshToken string) (*CreateTokensResult, error)
 	Logout(ctx context.Context, accessTokenClaims *AccessTokenClaims) error
 	ChangePassword(
 		ctx context.Context,

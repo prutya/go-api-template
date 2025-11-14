@@ -18,7 +18,6 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	AccessToken string `json:"accessToken"`
-	CSRFToken   string `json:"csrfToken"`
 }
 
 func NewLoginHandler(
@@ -63,7 +62,6 @@ func NewLoginHandler(
 		// Render the response
 		utils.RenderJson(w, r, &LoginResponse{
 			AccessToken: loginResult.AccessToken,
-			CSRFToken:   loginResult.CSRFToken,
 		}, http.StatusOK, nil)
 	}
 }

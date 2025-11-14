@@ -3,7 +3,7 @@ x-shared-configuration:
   dbmate: &dbmate
     image: docker.io/amacneil/dbmate:2.28.0
     volumes:
-      - "./db:/db"
+      - "${GO_API_TEMPLATE_ROOT:-.}/db:/db"
 
   postgres: &postgres
     image: docker.io/postgres:18.0-alpine3.22
@@ -45,7 +45,7 @@ services:
   psql:
     <<: [*postgres]
     volumes:
-      - "./db:/db"
+      - "${GO_API_TEMPLATE_ROOT:-.}/db:/db"
     entrypoint: ["psql", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"]
     networks:
       - app_dev

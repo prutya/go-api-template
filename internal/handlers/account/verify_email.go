@@ -17,7 +17,6 @@ type VerifyEmailRequest struct {
 
 type VerifyEmailResponse struct {
 	AccessToken string `json:"accessToken"`
-	CSRFToken   string `json:"csrfToken"`
 }
 
 func NewVerifyEmailHandler(
@@ -67,7 +66,6 @@ func NewVerifyEmailHandler(
 		// Render the response
 		utils.RenderJson(w, r, &RefreshSessionResponse{
 			AccessToken: loginResult.AccessToken,
-			CSRFToken:   loginResult.CSRFToken,
 		}, http.StatusOK, nil)
 	}
 }

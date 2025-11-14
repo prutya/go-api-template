@@ -2,7 +2,6 @@ package config
 
 import (
 	"bufio"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -43,14 +42,8 @@ type Config struct {
 	AuthenticationRefreshTokenCookieName             string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_NAME"`
 	AuthenticationRefreshTokenCookieDomain           string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_DOMAIN"`
 	AuthenticationRefreshTokenCookiePath             string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_PATH"`
-	AuthenticationRefreshTokenCookieSecure           bool          `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_SECURE"`
-	AuthenticationRefreshTokenCookieHttpOnly         bool          `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_HTTP_ONLY"`
-	AuthenticationRefreshTokenCookieSameSiteRaw      string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_SAME_SITE"`
-	AuthenticationRefreshTokenCookieSameSite         http.SameSite
 	AuthenticationAccessTokenTTL                     time.Duration `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_TTL"`
 	AuthenticationAccessTokenSecretLength            int           `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_SECRET_LENGTH"`
-	AuthenticationCSRFTokenHeaderName                string        `mapstructure:"AUTHENTICATION_CSRF_TOKEN_HEADER_NAME"`
-	AuthenticationCSRFTokenLength                    int           `mapstructure:"AUTHENTICATION_CSRF_TOKEN_LENGTH"`
 	AuthenticationEmailVerificationRateLimitInterval time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_RATE_LIMIT_INTERVAL"`
 	AuthenticationEmailVerificationTokenTTL          time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_TOKEN_TTL"`
 	AuthenticationEmailVerificationTokenSecretLength int           `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_TOKEN_SECRET_LENGTH"`
@@ -94,7 +87,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("request_timeout", 60*time.Second)
 	// No default for CORS Origins
 	viper.SetDefault("cors_allowed_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
-	viper.SetDefault("cors_allowed_headers", []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Captcha-Response"})
+	viper.SetDefault("cors_allowed_headers", []string{"Accept", "Authorization", "Content-Type", "X-Captcha-Response"})
 	viper.SetDefault("cors_exposed_headers", []string{"Link"})
 	viper.SetDefault("cors_allow_credentials", true)
 	viper.SetDefault("cors_max_age", 5*time.Minute)
@@ -121,13 +114,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_refresh_token_cookie_name", "refresh_token")
 	viper.SetDefault("authentication_refresh_token_cookie_domain", "")
 	viper.SetDefault("authentication_refresh_token_cookie_path", "/account/refresh-session")
-	viper.SetDefault("authentication_refresh_token_cookie_secure", true)
-	viper.SetDefault("authentication_refresh_token_cookie_http_only", true)
-	viper.SetDefault("authentication_refresh_token_cookie_same_site", "strict")
 	viper.SetDefault("authentication_access_token_ttl", 5*time.Minute)
 	viper.SetDefault("authentication_access_token_secret_length", 32)
-	viper.SetDefault("authentication_csrf_token_header_name", "X-CSRF-Token")
-	viper.SetDefault("authentication_csrf_token_length", 32)
 	viper.SetDefault("authentication_email_verification_rate_limit_interval", 15*time.Minute)
 	viper.SetDefault("authentication_email_verification_token_ttl", 15*time.Minute)
 	viper.SetDefault("authentication_email_verification_token_secret_length", 32)
@@ -166,25 +154,10 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	config.AuthenticationRefreshTokenCookieSameSite = parseSameSite(config.AuthenticationRefreshTokenCookieSameSiteRaw)
 	config.TransactionalEmailsScalewayRegion = parseScalewayRegion(config.TransactionalEmailsScalewayRegionRaw)
 	config.AuthenticationEmailBlocklist = loadAuthenticationEmailBlocklist()
 
 	return config, nil
-}
-
-func parseSameSite(s string) http.SameSite {
-	// Convert the string to lower case to make it case-insensitive
-	switch strings.ToLower(s) {
-	case "none":
-		return http.SameSiteNoneMode
-	case "lax":
-		return http.SameSiteLaxMode
-	case "strict":
-		return http.SameSiteStrictMode
-	default:
-		panic("invalid SameSite value: " + s)
-	}
 }
 
 func parseScalewayRegion(s string) scw.Region {

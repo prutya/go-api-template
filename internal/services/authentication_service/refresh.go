@@ -13,7 +13,7 @@ import (
 	"prutya/go-api-template/internal/models"
 )
 
-func (s *authenticationService) Refresh(ctx context.Context, refreshToken string, clientCSRFToken string) (*CreateTokensResult, error) {
+func (s *authenticationService) Refresh(ctx context.Context, refreshToken string) (*CreateTokensResult, error) {
 	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
 
 	logger := loggerpkg.MustFromContext(ctx)
@@ -21,24 +21,21 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 	refreshTokenRepo := s.repoFactory.NewRefreshTokenRepo(s.db)
 	sessionRepo := s.repoFactory.NewSessionRepo(s.db)
 
-	var refreshTokenClaims *RefreshTokenClaims
 	var dbRefreshToken *models.RefreshToken
 
 	// Parse the token
 
 	_, err := jwt.ParseWithClaims(refreshToken, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Extract the claims
-		refreshTokenClaims_inner, ok := token.Claims.(*RefreshTokenClaims)
+		refreshTokenClaims, ok := token.Claims.(*RefreshTokenClaims)
 		if !ok {
 			return nil, ErrInvalidRefreshTokenClaims
 		}
 
-		refreshTokenClaims = refreshTokenClaims_inner
-
 		// Find the refresh token by ID
-		dbRefreshToken_inner, err := refreshTokenRepo.FindById(ctx, refreshTokenClaims_inner.ID)
+		dbRefreshToken_inner, err := refreshTokenRepo.FindById(ctx, refreshTokenClaims.ID)
 		if err != nil {
-			logger.WarnContext(ctx, "RefreshToken not found", "refresh_token_id", refreshTokenClaims_inner.ID)
+			logger.WarnContext(ctx, "RefreshToken not found", "refresh_token_id", refreshTokenClaims.ID)
 
 			return nil, ErrRefreshTokenNotFound
 		}
@@ -54,24 +51,6 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		}
 
 		return nil, ErrRefreshTokenInvalid
-	}
-
-	// Check that CSRF tokens from the cookie and from the request match
-	//
-	// We are using the "double-submit" technique here. On login, we generate a
-	// CSRF token and store it in the cookie. We also return it in the response
-	// body. On the client side, we need to send the CSRF token in the request
-	// body (or headers) and the cookie will be sent as well.
-	//
-	// When the refresh endpoint is called, we check that the CSRF token from the
-	// cookie and the CSRF token from the request match. This works, because the
-	// potential attacker can only trick the user into sending cookies, but only
-	// the web client (JS) can set the CSRF token in the request body.
-
-	if refreshTokenClaims.CSRFToken != clientCSRFToken {
-		logger.WarnContext(ctx, "CSRF token mismatch", "refresh_token_id", refreshTokenClaims.ID)
-
-		return nil, ErrCSRFTokenMismatch
 	}
 
 	// Check if the refresh token is revoked
