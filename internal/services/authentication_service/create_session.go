@@ -27,7 +27,7 @@ func (s *authenticationService) createSession(
 	}
 
 	// Calculate the session expiration time
-	sessionExpiresAt := time.Now().Add(s.config.AuthenticationRefreshTokenTTL)
+	sessionExpiresAt := time.Now().UTC().Add(s.config.AuthenticationRefreshTokenTTL)
 
 	// Create a session in the database
 	err = sessionRepo.Create(

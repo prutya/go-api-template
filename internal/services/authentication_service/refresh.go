@@ -61,7 +61,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		// revoked to prevent race conditions when multiple refresh requests are
 		// sent at the same time
 
-		if time.Now().After(dbRefreshToken.LeewayExpiresAt.Time) {
+		if time.Now().UTC().After(dbRefreshToken.LeewayExpiresAt.Time) {
 			logger.WarnContext(ctx, "RefreshToken reuse detected", "refresh_token_id", dbRefreshToken.ID)
 
 			// The session is compromised, so we need to terminate it
@@ -123,7 +123,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		refreshTokenRepoTx := s.repoFactory.NewRefreshTokenRepo(tx)
 		accessTokenRepoTx := s.repoFactory.NewAccessTokenRepo(tx)
 
-		newSessionExpiresAt := time.Now().Add(s.config.AuthenticationRefreshTokenTTL)
+		newSessionExpiresAt := time.Now().UTC().Add(s.config.AuthenticationRefreshTokenTTL)
 
 		// Create new tokens
 		createTokensResult_tx, err := s.createTokens(

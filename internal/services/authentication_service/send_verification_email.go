@@ -90,7 +90,7 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 		return err
 	}
 
-	tokenExpiresAt := time.Now().Add(s.config.AuthenticationEmailVerificationTokenTTL)
+	tokenExpiresAt := time.Now().UTC().Add(s.config.AuthenticationEmailVerificationTokenTTL)
 
 	if err := emailVerificationTokenRepo.Create(ctx, tokenID, userID, tokenSecret, tokenExpiresAt); err != nil {
 		return err
@@ -161,7 +161,7 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 	if err := userRepo.UpdateEmailVerificationRateLimit(
 		ctx,
 		userID,
-		time.Now().Add(s.config.AuthenticationEmailVerificationRateLimitInterval),
+		time.Now().UTC().Add(s.config.AuthenticationEmailVerificationRateLimitInterval),
 	); err != nil {
 		return err
 	}

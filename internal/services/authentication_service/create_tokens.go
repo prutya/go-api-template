@@ -64,7 +64,7 @@ func (s *authenticationService) createTokens(
 	}
 
 	// Set the expiration time for the access token
-	accessTokenExpiresAt := time.Now().Add(s.config.AuthenticationAccessTokenTTL)
+	accessTokenExpiresAt := time.Now().UTC().Add(s.config.AuthenticationAccessTokenTTL)
 
 	// Create an access token in the database
 	if err := accessTokenRepo.Create(

@@ -74,7 +74,7 @@ func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, user
 		return err
 	}
 
-	tokenExpiresAt := time.Now().Add(s.config.AuthenticationPasswordResetTokenTTL)
+	tokenExpiresAt := time.Now().UTC().Add(s.config.AuthenticationPasswordResetTokenTTL)
 
 	if err := passwordResetTokenRepo.Create(ctx, tokenID, userID, tokenSecret, tokenExpiresAt); err != nil {
 		return err
@@ -143,7 +143,7 @@ func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, user
 	if err := userRepo.UpdatePasswordResetRateLimit(
 		ctx,
 		user.ID,
-		time.Now().Add(s.config.AuthenticationPasswordResetRateLimitInterval),
+		time.Now().UTC().Add(s.config.AuthenticationPasswordResetRateLimitInterval),
 	); err != nil {
 		return err
 	}

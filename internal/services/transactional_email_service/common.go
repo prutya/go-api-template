@@ -48,7 +48,7 @@ func checkGlobalLimit(
 }
 
 func resetDailyGlobalLimit(ctx context.Context, emailSendAttemptRepo repo.EmailSendAttemptRepo) error {
-	startOfDay := time.Now().Truncate(24 * time.Hour)
+	startOfDay := time.Now().UTC().Truncate(24 * time.Hour)
 
 	if err := emailSendAttemptRepo.DeleteBefore(ctx, startOfDay); err != nil {
 		return err
