@@ -21,9 +21,6 @@ func (s *authenticationService) Login(
 ) (*CreateTokensResult, error) {
 	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
 
-	// Normalize the email
-	email = normalizeEmail(email)
-
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 
 	// Find the user by email

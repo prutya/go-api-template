@@ -91,7 +91,10 @@ func (r *userRepo) FindByID(ctx context.Context, userID string) (*models.User, e
 
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := new(models.User)
-	err := r.db.NewSelect().Model(user).Where("email = ?", email).Scan(ctx)
+	err := r.db.NewSelect().
+		Model(user).
+		Where("lower(email) = lower(?)", email).
+		Scan(ctx)
 
 	if err != nil {
 		return nil, err

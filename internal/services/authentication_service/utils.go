@@ -34,6 +34,7 @@ func (s *authenticationService) scheduleEmailVerification(ctx context.Context, u
 
 func (s *authenticationService) isEmailDomainAllowed(email string) bool {
 	domain := strings.Split(email, "@")[1]
+	domain = strings.ToLower(domain)
 
 	_, blocked := s.config.AuthenticationEmailBlocklist[domain]
 
@@ -53,10 +54,6 @@ func findUserByID(ctx context.Context, userRepo repo.UserRepo, userID string) (*
 	}
 
 	return user, nil
-}
-
-func normalizeEmail(email string) string {
-	return strings.TrimSpace(strings.ToLower(email))
 }
 
 // Ensures the function takes at least the specified minimum duration to

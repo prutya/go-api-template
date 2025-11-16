@@ -15,10 +15,6 @@ var ErrEmailDomainNotAllowed = errors.New("email domain not allowed")
 func (s *authenticationService) Register(ctx context.Context, email string, password string) error {
 	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
 
-	// Normalize email
-
-	email = normalizeEmail(email)
-
 	// Check if the email domain is allowed
 	if !s.isEmailDomainAllowed(email) {
 		return ErrEmailDomainNotAllowed
