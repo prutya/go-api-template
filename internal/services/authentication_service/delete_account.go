@@ -7,8 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// NOTE: I am not using transactions here, because it's just a single write
-// operation
 func (s *authenticationService) DeleteAccount(
 	ctx context.Context,
 	accessTokenClaims *AccessTokenClaims,

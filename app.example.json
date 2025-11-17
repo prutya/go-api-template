@@ -33,6 +33,7 @@
   "authentication_access_token_secret_length": 32,
   "authentication_email_verification_cooldown": "1m",
   "authentication_email_verification_code_ttl": "15m",
+  "authentication_email_verification_max_attempts": 5,
   "authentication_password_reset_cooldown": "1m",
   "authentication_password_reset_code_ttl": "15m",
   "authentication_argon2_memory": 65536,

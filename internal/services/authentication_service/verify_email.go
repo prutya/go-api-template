@@ -44,7 +44,7 @@ func (s *authenticationService) VerifyEmail(
 
 	// Check expiration
 	if !user.EmailVerificationExpiresAt.Valid {
-		logger.WarnContext(ctx, "User's email_verification_expires_at was null", "user_id", user.ID)
+		logger.WarnContext(ctx, "User's email_verification_expires_at is null", "user_id", user.ID)
 
 		// This should not be null at this point
 		return nil, ErrEmailVerificationExpired
@@ -57,7 +57,6 @@ func (s *authenticationService) VerifyEmail(
 	}
 
 	// Verify OTP
-	// TODO: Check if hmac is null in db???
 	hmacOk, err := checkHmac([]byte(otp), s.config.AuthenticationOtpHmacSecret, user.EmailVerificationOtpHmac)
 	if err != nil {
 		return nil, err
@@ -66,10 +65,6 @@ func (s *authenticationService) VerifyEmail(
 	if !hmacOk {
 		logger.DebugContext(ctx, "Invalid OTP", "user_id", user.ID, "otp", otp)
 
-		// TODO: This looks like it can lead to a lost update if another transaction
-		// is incrementing the attempts at the same time. We can potentially end up
-		// with one or more extra attempts
-		// Increment attempts
 		if err := userRepo.IncrementEmailVerificationAttempts(ctx, user.ID); err != nil {
 			return nil, err
 		}

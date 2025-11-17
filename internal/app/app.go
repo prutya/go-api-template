@@ -67,10 +67,10 @@ func Initialize() *App {
 	// Database
 	db, err := db.New(
 		cfg.DatabaseUrl,
-		cfg.DatabaseMaxOpenConns,
-		cfg.DatabaseMaxIdleConns,
-		cfg.DatabaseMaxConnLifetime,
-		cfg.DatabaseMaxConnIdleTime,
+		cfg.DatabaseMaxOpenConnections,
+		cfg.DatabaseMaxIdleConnections,
+		cfg.DatabaseMaxConnectionLifetime,
+		cfg.DatabaseMaxConnectionIdleTime,
 	)
 	if err != nil {
 		logger.FatalContext(ctx, "Failed to connect to the database", "error", err)

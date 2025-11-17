@@ -29,11 +29,11 @@ type Config struct {
 	ReadHeaderTimeout    time.Duration `mapstructure:"READ_HEADER_TIMEOUT"`
 	IdleTimeout          time.Duration `mapstructure:"IDLE_TIMEOUT"`
 
-	DatabaseUrl             string        `mapstructure:"DATABASE_URL"`
-	DatabaseMaxOpenConns    int           `mapstructure:"DATABASE_MAX_OPEN_CONNS"`
-	DatabaseMaxIdleConns    int           `mapstructure:"DATABASE_MAX_IDLE_CONNS"`
-	DatabaseMaxConnLifetime time.Duration `mapstructure:"DATABASE_MAX_CONN_LIFETIME"`
-	DatabaseMaxConnIdleTime time.Duration `mapstructure:"DATABASE_MAX_CONN_IDLE_TIME"`
+	DatabaseUrl                   string        `mapstructure:"DATABASE_URL"`
+	DatabaseMaxOpenConnections    int           `mapstructure:"DATABASE_MAX_OPEN_CONNECTIONS"`
+	DatabaseMaxIdleConnections    int           `mapstructure:"DATABASE_MAX_IDLE_CONNECTIONS"`
+	DatabaseMaxConnectionLifetime time.Duration `mapstructure:"DATABASE_MAX_CONNECTION_LIFETIME"`
+	DatabaseMaxConnectionIdleTime time.Duration `mapstructure:"DATABASE_MAX_CONNECTION_IDLE_TIME"`
 
 	AuthenticationTimingAttackDelay            time.Duration `mapstructure:"AUTHENTICATION_TIMING_ATTACK_DELAY"`
 	AuthenticationRefreshTokenTTL              time.Duration `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_TTL"`
@@ -106,8 +106,8 @@ func Load() (*Config, error) {
 	// No default for database URL
 	viper.SetDefault("database_max_open_connections", 20)
 	viper.SetDefault("database_max_idle_connections", 5)
-	viper.SetDefault("database_max_conn_lifetime", 30*time.Minute)
-	viper.SetDefault("database_max_conn_idle_time", 5*time.Minute)
+	viper.SetDefault("database_max_connection_lifetime", 30*time.Minute)
+	viper.SetDefault("database_max_connection_idle_time", 5*time.Minute)
 
 	// Authentication
 	viper.SetDefault("authentication_bcrypt_cost", 12)
