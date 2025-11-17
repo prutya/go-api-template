@@ -15,7 +15,7 @@ func (s *authenticationService) Login(
 	userAgent string,
 	ipAddress string,
 ) (*CreateTokensResult, error) {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 

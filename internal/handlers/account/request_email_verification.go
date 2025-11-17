@@ -42,7 +42,7 @@ func NewRequestEmailVerificationHandler(
 
 			// We don't want to leak information about whether the account already
 			// exists so we always return 204
-			if errors.Is(err, authentication_service.ErrUserLocked) ||
+			if errors.Is(err, authentication_service.ErrUserRecordLocked) ||
 				errors.Is(err, authentication_service.ErrUserNotFound) ||
 				errors.Is(err, authentication_service.ErrEmailAlreadyVerified) ||
 				errors.Is(err, authentication_service.ErrEmailVerificationCooldown) {

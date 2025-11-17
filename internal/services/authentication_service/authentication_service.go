@@ -14,9 +14,12 @@ import (
 	"prutya/go-api-template/internal/tasks_client"
 )
 
-var ErrUserLocked = errors.New("user record is locked")
+var ErrUserRecordLocked = errors.New("user record is locked")
 var ErrEmailAlreadyVerified = errors.New("email already verified")
 var ErrEmailVerificationCooldown = errors.New("email verification cooldown")
+var ErrEmailVerificationExpired = errors.New("email verification expired")
+var ErrTooManyOTPAttempts = errors.New("too many OTP attempts")
+var ErrInvalidOTP = errors.New("invalid OTP")
 var ErrUserAlreadyExists = errors.New("user already exists")
 var ErrUserNotFound = errors.New("user not found")
 var ErrInvalidCredentials = errors.New("invalid credentials")
@@ -41,10 +44,6 @@ type AccessTokenClaims struct {
 	UserID string `json:"userId"`
 }
 
-type EmailVerificationTokenClaims struct {
-	jwt.RegisteredClaims
-}
-
 type PasswordResetTokenClaims struct {
 	jwt.RegisteredClaims
 }
@@ -57,7 +56,8 @@ type AuthenticationService interface {
 	// If successful, logs the user in directly.
 	VerifyEmail(
 		ctx context.Context,
-		emailVerificationToken string,
+		email string,
+		otp string,
 		userAgent string,
 		ipAddress string,
 	) (*CreateTokensResult, error)

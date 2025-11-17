@@ -11,7 +11,7 @@ import (
 )
 
 func (s *authenticationService) RequestNewVerificationEmail(ctx context.Context, email string) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	// Check if the email domain is allowed
 	if !s.isEmailDomainAllowed(email) {
@@ -27,7 +27,7 @@ func (s *authenticationService) RequestNewVerificationEmail(ctx context.Context,
 		if err != nil {
 			// Handle postgres lock error
 			if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "55P03" {
-				return ErrUserLocked
+				return ErrUserRecordLocked
 			}
 
 			if errors.Is(err, sql.ErrNoRows) {
@@ -50,12 +50,11 @@ func (s *authenticationService) RequestNewVerificationEmail(ctx context.Context,
 		}
 
 		// Reset OTP hash and attempts, update cooldown and OTP expiration time
-		if err := userRepo.ResetEmailVerification(
+		if err := userRepo.StartEmailVerification(
 			ctx,
 			userID,
-			// TODO: Extract configuration variables
-			time.Now().UTC().Add(15*time.Minute),
-			time.Now().UTC().Add(1*time.Minute),
+			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCodeTTL),
+			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCooldown),
 		); err != nil {
 			return err
 		}

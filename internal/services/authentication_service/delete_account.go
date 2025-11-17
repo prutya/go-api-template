@@ -14,7 +14,7 @@ func (s *authenticationService) DeleteAccount(
 	accessTokenClaims *AccessTokenClaims,
 	password string,
 ) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 

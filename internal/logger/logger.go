@@ -42,21 +42,6 @@ func New(levelStr string, format string) (*Logger, error) {
 	return &Logger{slog: slogLogger}, nil
 }
 
-func parseLevel(levelStr string) (slog.Level, error) {
-	switch strings.ToLower(levelStr) {
-	case "debug":
-		return slog.LevelDebug, nil
-	case "info":
-		return slog.LevelInfo, nil
-	case "warn", "warning":
-		return slog.LevelWarn, nil
-	case "error":
-		return slog.LevelError, nil
-	default:
-		return slog.LevelInfo, ErrUnknownLogLevel
-	}
-}
-
 func (l *Logger) DebugContext(ctx context.Context, msg string, args ...any) {
 	debugContext(l, ctx, msg, args...)
 }
@@ -78,8 +63,44 @@ func (l *Logger) FatalContext(ctx context.Context, msg string, args ...any) {
 	os.Exit(1)
 }
 
+func MustDebugContext(ctx context.Context, msg string, args ...any) {
+	mustDebugContext(ctx, msg, args...)
+}
+
+func MustInfoContext(ctx context.Context, msg string, args ...any) {
+	MustFromContext(ctx).InfoContext(ctx, msg, args...)
+}
+
+func MustWarnContext(ctx context.Context, msg string, args ...any) {
+	MustFromContext(ctx).WarnContext(ctx, msg, args...)
+}
+
+func MustErrorContext(ctx context.Context, msg string, args ...any) {
+	MustFromContext(ctx).ErrorContext(ctx, msg, args...)
+}
+
+func MustFatalContext(ctx context.Context, msg string, args ...any) {
+	MustFromContext(ctx).ErrorContext(ctx, msg, args...)
+	os.Exit(1)
+}
+
 func (l *Logger) With(key string, value any) *Logger {
 	return &Logger{
 		slog: l.slog.With(key, value),
+	}
+}
+
+func parseLevel(levelStr string) (slog.Level, error) {
+	switch strings.ToLower(levelStr) {
+	case "debug":
+		return slog.LevelDebug, nil
+	case "info":
+		return slog.LevelInfo, nil
+	case "warn", "warning":
+		return slog.LevelWarn, nil
+	case "error":
+		return slog.LevelError, nil
+	default:
+		return slog.LevelInfo, ErrUnknownLogLevel
 	}
 }

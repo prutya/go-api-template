@@ -11,19 +11,30 @@ import (
 
 type UserRepo interface {
 	Create(ctx context.Context, id string, email string, password string) error
-	UpdateEmailVerificationRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error
 	UpdatePasswordResetRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error
-	MarkEmailAsVerified(ctx context.Context, userID string) error
 	FindByID(ctx context.Context, userID string) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByEmailForUpdateNowait(ctx context.Context, email string) (*models.User, error)
 	UpdatePasswordDigest(ctx context.Context, userID string, newPasswordDigest string) error
 	Delete(ctx context.Context, userID string) error
-	ResetEmailVerification(
+	StartEmailVerification(
 		ctx context.Context,
 		userId string,
 		emailVerificationExpiresAt time.Time,
 		emailVerificationCooldownResetsAt time.Time,
+	) error
+	IncrementEmailVerificationAttempts(
+		ctx context.Context,
+		userId string,
+	) error
+	CompleteEmailVerification(
+		ctx context.Context,
+		userId string,
+	) error
+	UpdateEmailVerificationOtpHmac(
+		ctx context.Context,
+		userId string,
+		hmac []byte,
 	) error
 }
 
@@ -52,33 +63,11 @@ func (r *userRepo) Create(ctx context.Context, id string, email string, password
 	return nil
 }
 
-func (r *userRepo) UpdateEmailVerificationRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error {
-	_, err := r.db.NewUpdate().
-		Model((*models.User)(nil)).
-		Where("id = ?", userID).
-		Set("email_verification_rate_limited_until = ?", rateLimitUntil).
-		Set("updated_at = now()").
-		Exec(ctx)
-
-	return err
-}
-
 func (r *userRepo) UpdatePasswordResetRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
 		Where("id = ?", userID).
 		Set("password_reset_rate_limited_until = ?", rateLimitUntil).
-		Set("updated_at = now()").
-		Exec(ctx)
-
-	return err
-}
-
-func (r *userRepo) MarkEmailAsVerified(ctx context.Context, userID string) error {
-	_, err := r.db.NewUpdate().
-		Model((*models.User)(nil)).
-		Where("id = ?", userID).
-		Set("email_verified_at = now()").
 		Set("updated_at = now()").
 		Exec(ctx)
 
@@ -95,6 +84,17 @@ func (r *userRepo) FindByID(ctx context.Context, userID string) (*models.User, e
 
 	return user, nil
 }
+
+// func (r *userRepo) FindByIDForUpdate(ctx context.Context, userID string) (*models.User, error) {
+// 	user := new(models.User)
+// 	err := r.db.NewSelect().Model(user).Where("id = ?", userID).For("UPDATE").Scan(ctx)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return user, nil
+// }
 
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := new(models.User)
@@ -145,7 +145,7 @@ func (r *userRepo) Delete(ctx context.Context, userID string) error {
 	return err
 }
 
-func (r *userRepo) ResetEmailVerification(
+func (r *userRepo) StartEmailVerification(
 	ctx context.Context,
 	userId string,
 	emailVerificationExpiresAt time.Time,
@@ -162,9 +162,51 @@ func (r *userRepo) ResetEmailVerification(
 		Where("id = ?", userId).
 		Exec(ctx)
 
-	if err != nil {
-		return err
-	}
+	return err
+}
 
-	return nil
+func (r *userRepo) IncrementEmailVerificationAttempts(
+	ctx context.Context,
+	userId string,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("email_verification_otp_attempts = email_verification_otp_attempts + 1").
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) CompleteEmailVerification(
+	ctx context.Context,
+	userId string,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("email_verified_at = now()").
+		Set("email_verification_otp_hmac = null").
+		Set("email_verification_expires_at = null").
+		Set("email_verification_otp_attempts = 0").
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) UpdateEmailVerificationOtpHmac(
+	ctx context.Context,
+	userId string,
+	hmac []byte,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("email_verification_otp_hmac = ?", hmac).
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
 }

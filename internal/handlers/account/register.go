@@ -36,11 +36,13 @@ func NewRegisterHandler(authenticationService authentication_service.Authenticat
 				return
 			}
 
-			if errors.Is(err, authentication_service.ErrEmailIsTaken) {
-				// We don't want to leak information about whether the email is already
-				// registered, so when the frontend sees 204 No Content, it should show
-				// a message like "If your email address is valid, you will receive a
-				// verification code"
+			// We don't want to leak information about whether the account already
+			// exists so we always return 204
+			if errors.Is(err, authentication_service.ErrUserRecordLocked) ||
+				errors.Is(err, authentication_service.ErrEmailAlreadyVerified) ||
+				errors.Is(err, authentication_service.ErrEmailVerificationCooldown) ||
+				errors.Is(err, authentication_service.ErrUserAlreadyExists) {
+
 				utils.RenderNoContent(w, r, nil)
 				return
 			}

@@ -14,7 +14,7 @@ import (
 )
 
 func (s *authenticationService) Refresh(ctx context.Context, refreshToken string) (*CreateTokensResult, error) {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	logger := loggerpkg.MustFromContext(ctx)
 

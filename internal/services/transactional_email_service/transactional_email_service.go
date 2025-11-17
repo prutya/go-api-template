@@ -40,11 +40,7 @@ func NewTransactionalEmailService(
 	repoFactory repo.RepoFactory,
 ) (TransactionalEmailService, error) {
 	if !enabled {
-		return &noopTransactionalEmailService{
-			dailyGlobalLimit: dailyGlobalLimit,
-			db:               db,
-			repoFactory:      repoFactory,
-		}, nil
+		return newNoopTransactionalEmailService(dailyGlobalLimit, db, repoFactory)
 	}
 
 	scwClient, err := scw.NewClient(

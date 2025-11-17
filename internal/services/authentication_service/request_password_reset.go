@@ -10,7 +10,7 @@ import (
 
 // NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) RequestPasswordReset(ctx context.Context, email string) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 

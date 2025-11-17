@@ -2,6 +2,7 @@ package config
 
 import (
 	"bufio"
+	"encoding/base64"
 	"os"
 	"strings"
 	"time"
@@ -34,25 +35,28 @@ type Config struct {
 	DatabaseMaxConnLifetime time.Duration `mapstructure:"DATABASE_MAX_CONN_LIFETIME"`
 	DatabaseMaxConnIdleTime time.Duration `mapstructure:"DATABASE_MAX_CONN_IDLE_TIME"`
 
-	AuthenticationBcryptCost                         int           `mapstructure:"AUTHENTICATION_BCRYPT_COST"`
-	AuthenticationTimingAttackDelay                  time.Duration `mapstructure:"AUTHENTICATION_TIMING_ATTACK_DELAY"`
-	AuthenticationRefreshTokenTTL                    time.Duration `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_TTL"`
-	AuthenticationRefreshTokenSecretLength           int           `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_SECRET_LENGTH"`
-	AuthenticationRefreshTokenLeeway                 time.Duration `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_LEEWAY"`
-	AuthenticationRefreshTokenCookieName             string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_NAME"`
-	AuthenticationRefreshTokenCookieDomain           string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_DOMAIN"`
-	AuthenticationRefreshTokenCookiePath             string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_PATH"`
-	AuthenticationAccessTokenTTL                     time.Duration `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_TTL"`
-	AuthenticationAccessTokenSecretLength            int           `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_SECRET_LENGTH"`
-	AuthenticationEmailVerificationRateLimitInterval time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_RATE_LIMIT_INTERVAL"`
-	AuthenticationEmailVerificationTokenTTL          time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_TOKEN_TTL"`
-	AuthenticationEmailVerificationTokenSecretLength int           `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_TOKEN_SECRET_LENGTH"`
-	AuthenticationEmailVerificationURL               string        `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_URL"`
-	AuthenticationPasswordResetRateLimitInterval     time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_RATE_LIMIT_INTERVAL"`
-	AuthenticationPasswordResetTokenTTL              time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_TOKEN_TTL"`
-	AuthenticationPasswordResetTokenSecretLength     int           `mapstructure:"AUTHENTICATION_PASSWORD_RESET_TOKEN_SECRET_LENGTH"`
-	AuthenticationPasswordResetURL                   string        `mapstructure:"AUTHENTICATION_PASSWORD_RESET_URL"`
-	AuthenticationEmailBlocklist                     map[string]struct{}
+	AuthenticationTimingAttackDelay            time.Duration `mapstructure:"AUTHENTICATION_TIMING_ATTACK_DELAY"`
+	AuthenticationRefreshTokenTTL              time.Duration `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_TTL"`
+	AuthenticationRefreshTokenSecretLength     uint32        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_SECRET_LENGTH"`
+	AuthenticationRefreshTokenLeeway           time.Duration `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_LEEWAY"`
+	AuthenticationRefreshTokenCookieName       string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_NAME"`
+	AuthenticationRefreshTokenCookieDomain     string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_DOMAIN"`
+	AuthenticationRefreshTokenCookiePath       string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_PATH"`
+	AuthenticationAccessTokenTTL               time.Duration `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_TTL"`
+	AuthenticationAccessTokenSecretLength      uint32        `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_SECRET_LENGTH"`
+	AuthenticationEmailVerificationCooldown    time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_COOLDOWN"`
+	AuthenticationEmailVerificationCodeTTL     time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_CODE_TTL"`
+	AuthenticationEmailVerificationMaxAttempts int           `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_MAX_ATTEMPTS"`
+	AuthenticationPasswordResetCooldown        time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_COOLDOWN"`
+	AuthenticationPasswordResetCodeTTL         time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_CODE_TTL"`
+	AuthenticationArgon2Memory                 uint32        `mapstructure:"AUTHENTICATION_ARGON2_MEMORY"`
+	AuthenticationArgon2Iterations             uint32        `mapstructure:"AUTHENTICATION_ARGON2_ITERATIONS"`
+	AuthenticationArgon2Parallelism            uint8         `mapstructure:"AUTHENTICATION_ARGON2_PARALLELISM"`
+	AuthenticationArgon2SaltLength             uint32        `mapstructure:"AUTHENTICATION_ARGON2_SALT_LENGTH"`
+	AuthenticationArgon2KeyLength              uint32        `mapstructure:"AUTHENTICATION_ARGON2_KEY_LENGTH"`
+	AuthenticationOtpHmacSecretBase64          string        `mapstructure:"AUTHENTICATION_OTP_HMAC_SECRET"`
+	AuthenticationOtpHmacSecret                []byte
+	AuthenticationEmailBlocklist               map[string]struct{}
 
 	CaptchaEnabled            bool   `mapstructure:"CAPTCHA_ENABLED"`
 	CaptchaTurnstileBaseURL   string `mapstructure:"CAPTCHA_TURNSTILE_BASE_URL"`
@@ -116,14 +120,16 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_refresh_token_cookie_path", "/account/refresh-session")
 	viper.SetDefault("authentication_access_token_ttl", 5*time.Minute)
 	viper.SetDefault("authentication_access_token_secret_length", 32)
-	viper.SetDefault("authentication_email_verification_rate_limit_interval", 15*time.Minute)
-	viper.SetDefault("authentication_email_verification_token_ttl", 15*time.Minute)
-	viper.SetDefault("authentication_email_verification_token_secret_length", 32)
-	viper.SetDefault("authentication_email_verification_url", "https://example.com/settings/verify-email")
-	viper.SetDefault("authentication_password_reset_rate_limit_interval", 15*time.Minute)
-	viper.SetDefault("authentication_password_reset_token_ttl", 15*time.Minute)
-	viper.SetDefault("authentication_password_reset_token_secret_length", 32)
-	viper.SetDefault("authentication_password_reset_url", "https://example.com/settings/reset-password")
+	viper.SetDefault("authentication_email_verification_cooldown", 1*time.Minute)
+	viper.SetDefault("authentication_email_verification_code_ttl", 15*time.Minute)
+	viper.SetDefault("authentication_email_verification_max_attempts", 5)
+	viper.SetDefault("authentication_password_reset_cooldown", 1*time.Minute)
+	viper.SetDefault("authentication_password_reset_code_ttl", 15*time.Minute)
+	viper.SetDefault("authentication_argon2_memory", uint32(64*1024))
+	viper.SetDefault("authentication_argon2_iterations", uint32(3))
+	viper.SetDefault("authentication_argon2_parallelism", uint8(2))
+	viper.SetDefault("authentication_argon2_salt_length", uint32(16))
+	viper.SetDefault("authentication_argon2_key_length", uint32(32))
 	// AuthenticationEmailBlocklist is loaded from a file and parsed later
 
 	// Captcha
@@ -155,6 +161,11 @@ func Load() (*Config, error) {
 	}
 
 	config.TransactionalEmailsScalewayRegion = parseScalewayRegion(config.TransactionalEmailsScalewayRegionRaw)
+	decodedOtpHmacSecret, err := loadAuthenticationOtpHmacSecret(config.AuthenticationOtpHmacSecretBase64)
+	if err != nil {
+		return nil, err
+	}
+	config.AuthenticationOtpHmacSecret = decodedOtpHmacSecret
 	config.AuthenticationEmailBlocklist = loadAuthenticationEmailBlocklist()
 
 	return config, nil
@@ -168,6 +179,10 @@ func parseScalewayRegion(s string) scw.Region {
 	}
 
 	return region
+}
+
+func loadAuthenticationOtpHmacSecret(b64 string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(b64)
 }
 
 // See https://github.com/disposable-email-domains/disposable-email-domains

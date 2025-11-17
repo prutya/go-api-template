@@ -2,13 +2,17 @@ package captcha_service
 
 import (
 	"context"
-	"prutya/go-api-template/internal/logger"
+	"log/slog"
 )
 
 type noopCaptchaService struct{}
 
-func (s *noopCaptchaService) Verify(ctx context.Context, captchaResponse string, ip string) (bool, error) {
-	logger.MustFromContext(ctx).WarnContext(ctx, "Captcha verification is disabled, always returning true")
+func newNoopCaptchaService() CaptchaService {
+	slog.Warn("Captcha verification is disabled, always returning true")
 
+	return &noopCaptchaService{}
+}
+
+func (s *noopCaptchaService) Verify(ctx context.Context, captchaResponse string, ip string) (bool, error) {
 	return true, nil
 }

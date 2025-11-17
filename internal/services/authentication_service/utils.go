@@ -2,12 +2,15 @@ package authentication_service
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -49,11 +52,11 @@ func findUserByID(ctx context.Context, userRepo repo.UserRepo, userID string) (*
 	user, err := userRepo.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-
 			logger.MustFromContext(ctx).WarnContext(ctx, "user not found", "user_id", userID, "error", err)
 
 			return nil, ErrUserNotFound
 		}
+
 		return nil, err
 	}
 
@@ -63,12 +66,14 @@ func findUserByID(ctx context.Context, userRepo repo.UserRepo, userID string) (*
 // Ensures the function takes at least the specified minimum duration to
 // execute. This is useful for preventing timing attacks by adding a delay to
 // the function execution time.
-func withMinimumAllowedFunctionDuration(minimumAllowedFunctionDuration time.Duration) func() {
+func withMinimumAllowedFunctionDuration(ctx context.Context, minimumAllowedFunctionDuration time.Duration) func() {
 	startTime := time.Now()
 
 	return func() {
 		duration := time.Since(startTime)
 		timeLeft := minimumAllowedFunctionDuration - duration
+
+		logger.MustDebugContext(ctx, "Function has returned", "real_execution_time", duration)
 
 		if timeLeft > 0 {
 			time.Sleep(timeLeft)
@@ -85,7 +90,7 @@ func generateUUID() (string, error) {
 	return uuid.String(), nil
 }
 
-func generateRandomBytes(length int) ([]byte, error) {
+func generateRandomBytes(length uint32) ([]byte, error) {
 	secret := make([]byte, length)
 
 	if _, err := rand.Read(secret); err != nil {
@@ -106,13 +111,9 @@ type argon2params struct {
 	keyLength   uint32
 }
 
-func argon2GenerateHashFromPassword(
-	password string,
-	p *argon2params,
-) (string, error) {
+func (s *authenticationService) argon2GenerateHashFromPassword(password string) (string, error) {
 	// Generate a cryptographically secure random salt.
-	// TODO: See if we can use uint32 in our config file
-	salt, err := generateRandomBytes(int(p.saltLength))
+	salt, err := generateRandomBytes(s.config.AuthenticationArgon2SaltLength)
 	if err != nil {
 		return "", err
 	}
@@ -123,10 +124,10 @@ func argon2GenerateHashFromPassword(
 	hash := argon2.IDKey(
 		[]byte(password),
 		salt,
-		p.iterations,
-		p.memory,
-		p.parallelism,
-		p.keyLength,
+		s.config.AuthenticationArgon2Iterations,
+		s.config.AuthenticationArgon2Memory,
+		s.config.AuthenticationArgon2Parallelism,
+		s.config.AuthenticationArgon2KeyLength,
 	)
 
 	// Base64 encode the salt and hashed password.
@@ -137,9 +138,9 @@ func argon2GenerateHashFromPassword(
 	encodedHash := fmt.Sprintf(
 		"$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version,
-		p.memory,
-		p.iterations,
-		p.parallelism,
+		s.config.AuthenticationArgon2Memory,
+		s.config.AuthenticationArgon2Iterations,
+		s.config.AuthenticationArgon2Parallelism,
 		b64Salt,
 		b64Hash,
 	)
@@ -201,4 +202,35 @@ func argon2DecodeHash(encodedHash string) (p *argon2params, salt, hash []byte, e
 	p.keyLength = uint32(len(hash))
 
 	return p, salt, hash, nil
+}
+
+func generateOtp() (string, error) {
+	max := big.NewInt(1000000) // 0 to 999999
+
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return "", err
+	}
+
+	// Format with leading zeros to ensure 6 digits
+	return fmt.Sprintf("%06d", n), nil
+}
+
+func generateHmac(input []byte, secret []byte) ([]byte, error) {
+	h := hmac.New(sha256.New, secret)
+
+	if _, err := h.Write(input); err != nil {
+		return nil, err
+	}
+
+	return h.Sum(nil), nil
+}
+
+func checkHmac(input []byte, secret []byte, expected []byte) (bool, error) {
+	inputHmac, err := generateHmac(input, secret)
+	if err != nil {
+		return false, err
+	}
+
+	return hmac.Equal(inputHmac, expected), nil
 }

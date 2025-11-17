@@ -1,14 +1,9 @@
 package authentication_service
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"net/url"
 	text_template "text/template"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var PasswordResetEmailTemplateText = text_template.Must(text_template.New("password_reset_email").Parse(
@@ -44,108 +39,110 @@ var PasswordResetEmailTemplateHTML = text_template.Must(text_template.New("passw
 var ErrPasswordResetRateLimited = errors.New("password reset rate limited")
 
 func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, userID string) error {
-	passwordResetTokenRepo := s.repoFactory.NewPasswordResetTokenRepo(s.db)
-	userRepo := s.repoFactory.NewUserRepo(s.db)
+	return errors.New("not implemented")
 
-	// Fetch the user
-	user, err := findUserByID(ctx, userRepo, userID)
-	if err != nil {
-		return err
-	}
+	// passwordResetTokenRepo := s.repoFactory.NewPasswordResetTokenRepo(s.db)
+	// userRepo := s.repoFactory.NewUserRepo(s.db)
 
-	// // Check if password reset is rate limited
-	// if user.PasswordResetRateLimitedUntil.Valid {
-	// 	if user.PasswordResetRateLimitedUntil.Time.After(time.Now()) {
-	// 		logger.MustFromContext(ctx).WarnContext(ctx, "password reset rate limited", "user_id", user.ID, "error", err)
-
-	// 		return ErrPasswordResetRateLimited
-	// 	}
+	// // Fetch the user
+	// user, err := findUserByID(ctx, userRepo, userID)
+	// if err != nil {
+	// 	return err
 	// }
 
-	// Generate a new password reset token and store it
-	tokenID, err := generateUUID()
-	if err != nil {
-		return err
-	}
+	// // // Check if password reset is rate limited
+	// // if user.PasswordResetRateLimitedUntil.Valid {
+	// // 	if user.PasswordResetRateLimitedUntil.Time.After(time.Now()) {
+	// // 		logger.MustFromContext(ctx).WarnContext(ctx, "password reset rate limited", "user_id", user.ID, "error", err)
 
-	tokenSecret, err := generateRandomBytes(s.config.AuthenticationPasswordResetTokenSecretLength)
-	if err != nil {
-		return err
-	}
+	// // 		return ErrPasswordResetRateLimited
+	// // 	}
+	// // }
 
-	tokenExpiresAt := time.Now().UTC().Add(s.config.AuthenticationPasswordResetTokenTTL)
+	// // Generate a new password reset token and store it
+	// tokenID, err := generateUUID()
+	// if err != nil {
+	// 	return err
+	// }
 
-	if err := passwordResetTokenRepo.Create(ctx, tokenID, userID, tokenSecret, tokenExpiresAt); err != nil {
-		return err
-	}
+	// tokenSecret, err := generateRandomBytes(s.config.AuthenticationPasswordResetTokenSecretLength)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Build a token JWT
+	// tokenExpiresAt := time.Now().UTC().Add(s.config.AuthenticationPasswordResetTokenTTL)
 
-	tokenClaims := &PasswordResetTokenClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        tokenID,
-			ExpiresAt: jwt.NewNumericDate(tokenExpiresAt),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
+	// if err := passwordResetTokenRepo.Create(ctx, tokenID, userID, tokenSecret, tokenExpiresAt); err != nil {
+	// 	return err
+	// }
 
-	tokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
+	// // Build a token JWT
 
-	tokenString, err := tokenJWT.SignedString(tokenSecret)
-	if err != nil {
-		return err
-	}
+	// tokenClaims := &PasswordResetTokenClaims{
+	// 	RegisteredClaims: jwt.RegisteredClaims{
+	// 		ID:        tokenID,
+	// 		ExpiresAt: jwt.NewNumericDate(tokenExpiresAt),
+	// 		NotBefore: jwt.NewNumericDate(time.Now()),
+	// 		IssuedAt:  jwt.NewNumericDate(time.Now()),
+	// 	},
+	// }
 
-	// Prepare the reset URL
-	resetURL := s.config.AuthenticationPasswordResetURL
-	resetURL = resetURL + "?" + url.Values{"token": []string{tokenString}}.Encode()
+	// tokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
 
-	// Render the email template
+	// tokenString, err := tokenJWT.SignedString(tokenSecret)
+	// if err != nil {
+	// 	return err
+	// }
 
-	var textContentBuf bytes.Buffer
-	if err := PasswordResetEmailTemplateText.Execute(&textContentBuf, map[string]string{
-		"ResetURL": resetURL,
-		"TokenTTL": s.config.AuthenticationPasswordResetTokenTTL.String(),
-	}); err != nil {
-		return err
-	}
+	// // Prepare the reset URL
+	// resetURL := s.config.AuthenticationPasswordResetURL
+	// resetURL = resetURL + "?" + url.Values{"token": []string{tokenString}}.Encode()
 
-	var htmlContentBuf bytes.Buffer
-	if err := PasswordResetEmailTemplateHTML.Execute(&htmlContentBuf, map[string]string{
-		"ResetURL": resetURL,
-		"TokenTTL": s.config.AuthenticationPasswordResetTokenTTL.String(),
-	}); err != nil {
-		return err
-	}
+	// // Render the email template
 
-	// Send the email
-	if err := s.transactionalEmailService.SendEmail(
-		ctx,
-		user.Email,
-		user.ID,
-		"Password reset",
-		textContentBuf.String(),
-		htmlContentBuf.String(),
-	); err != nil {
-		return err
-	}
+	// var textContentBuf bytes.Buffer
+	// if err := PasswordResetEmailTemplateText.Execute(&textContentBuf, map[string]string{
+	// 	"ResetURL": resetURL,
+	// 	"TokenTTL": s.config.AuthenticationPasswordResetTokenTTL.String(),
+	// }); err != nil {
+	// 	return err
+	// }
 
-	// Update the sent_at of the password reset token
-	if err := passwordResetTokenRepo.UpdateSentAt(ctx, tokenID, time.Now()); err != nil {
-		return err
-	}
+	// var htmlContentBuf bytes.Buffer
+	// if err := PasswordResetEmailTemplateHTML.Execute(&htmlContentBuf, map[string]string{
+	// 	"ResetURL": resetURL,
+	// 	"TokenTTL": s.config.AuthenticationPasswordResetTokenTTL.String(),
+	// }); err != nil {
+	// 	return err
+	// }
 
-	// Update the password reset rate limit
-	// NOTE: This is not in the same transaction as UpdateSentAt, because it does
-	// not have to be 100% correct. Most of the time it should work.
-	if err := userRepo.UpdatePasswordResetRateLimit(
-		ctx,
-		user.ID,
-		time.Now().UTC().Add(s.config.AuthenticationPasswordResetRateLimitInterval),
-	); err != nil {
-		return err
-	}
+	// // Send the email
+	// if err := s.transactionalEmailService.SendEmail(
+	// 	ctx,
+	// 	user.Email,
+	// 	user.ID,
+	// 	"Password reset",
+	// 	textContentBuf.String(),
+	// 	htmlContentBuf.String(),
+	// ); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// // Update the sent_at of the password reset token
+	// if err := passwordResetTokenRepo.UpdateSentAt(ctx, tokenID, time.Now()); err != nil {
+	// 	return err
+	// }
+
+	// // Update the password reset rate limit
+	// // NOTE: This is not in the same transaction as UpdateSentAt, because it does
+	// // not have to be 100% correct. Most of the time it should work.
+	// if err := userRepo.UpdatePasswordResetRateLimit(
+	// 	ctx,
+	// 	user.ID,
+	// 	time.Now().UTC().Add(s.config.AuthenticationPasswordResetRateLimitInterval),
+	// ); err != nil {
+	// 	return err
+	// }
+
+	// return nil
 }

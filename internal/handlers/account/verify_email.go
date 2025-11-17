@@ -12,7 +12,8 @@ import (
 )
 
 type VerifyEmailRequest struct {
-	Token string `json:"token" validate:"required"`
+	Email string `json:"email" validate:"required,gte=3,lte=512,email"`
+	OTP   string `json:"otp" validate:"required,len=6,numeric"`
 }
 
 type VerifyEmailResponse struct {
@@ -39,15 +40,22 @@ func NewVerifyEmailHandler(
 		// Verify email
 		loginResult, err := authenticationService.VerifyEmail(
 			r.Context(),
-			reqBody.Token,
+			reqBody.Email,
+			reqBody.OTP,
 			r.UserAgent(),
 			r.RemoteAddr,
 		)
 		if err != nil {
-			if errors.Is(err, authentication_service.ErrInvalidEmailVerificationTokenClaims) ||
-				errors.Is(err, authentication_service.ErrEmailVerificationTokenNotFound) ||
-				errors.Is(err, authentication_service.ErrEmailVerificationTokenInvalid) {
-				utils.RenderError(w, r, utils.ErrUnauthorized)
+			// Prevent user enumeration by handling errors and returning
+			// 422 invalid_otp
+			if errors.Is(err, authentication_service.ErrUserNotFound) ||
+				errors.Is(err, authentication_service.ErrTooManyOTPAttempts) ||
+				errors.Is(err, authentication_service.ErrEmailVerificationExpired) ||
+				errors.Is(err, authentication_service.ErrInvalidOTP) {
+
+				displayError := authentication_service.ErrInvalidOTP
+
+				utils.RenderError(w, r, utils.NewServerError(displayError.Error(), http.StatusUnprocessableEntity))
 				return
 			}
 

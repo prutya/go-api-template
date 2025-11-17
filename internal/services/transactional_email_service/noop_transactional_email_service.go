@@ -2,6 +2,7 @@ package transactional_email_service
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -14,6 +15,20 @@ type noopTransactionalEmailService struct {
 	dailyGlobalLimit int
 	db               bun.IDB
 	repoFactory      repo.RepoFactory
+}
+
+func newNoopTransactionalEmailService(
+	dailyGlobalLimit int,
+	db bun.IDB,
+	repoFactory repo.RepoFactory,
+) (TransactionalEmailService, error) {
+	slog.Warn("Transactional emails are disabled. Delivery is faked")
+
+	return &noopTransactionalEmailService{
+		dailyGlobalLimit: dailyGlobalLimit,
+		db:               db,
+		repoFactory:      repoFactory,
+	}, nil
 }
 
 func (s *noopTransactionalEmailService) SendEmail(
@@ -34,7 +49,7 @@ func (s *noopTransactionalEmailService) SendEmail(
 
 	logger.WarnContext(
 		ctx,
-		"Transactional email sending is disabled, faking email sending",
+		"Fake transactional email",
 		"subject", subject,
 		"text_body", textBody,
 		"user_id", userID,

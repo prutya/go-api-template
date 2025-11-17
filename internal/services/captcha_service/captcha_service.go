@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"prutya/go-api-template/internal/logger"
 	"time"
+
+	"prutya/go-api-template/internal/logger"
 )
 
 type CaptchaService interface {
@@ -25,7 +26,7 @@ func NewCaptchaService(
 	secretKey string,
 ) CaptchaService {
 	if !enabled {
-		return &noopCaptchaService{}
+		return newNoopCaptchaService()
 	}
 
 	// TODO: Make configurable
