@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -10,8 +11,14 @@ import (
 )
 
 type UserRepo interface {
-	Create(ctx context.Context, id string, email string, password string) error
-	UpdatePasswordResetRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error
+	Create(
+		ctx context.Context,
+		userId string,
+		email string,
+		passwordDigest string,
+		emailVerificationExpiresAt time.Time,
+		emailVerificationCooldownResetsAt time.Time,
+	) error
 	FindByID(ctx context.Context, userID string) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByEmailForUpdateNowait(ctx context.Context, email string) (*models.User, error)
@@ -23,19 +30,9 @@ type UserRepo interface {
 		emailVerificationExpiresAt time.Time,
 		emailVerificationCooldownResetsAt time.Time,
 	) error
-	IncrementEmailVerificationAttempts(
-		ctx context.Context,
-		userId string,
-	) error
-	CompleteEmailVerification(
-		ctx context.Context,
-		userId string,
-	) error
-	UpdateEmailVerificationOtpHmac(
-		ctx context.Context,
-		userId string,
-		hmac []byte,
-	) error
+	IncrementEmailVerificationAttempts(ctx context.Context, userId string) error
+	CompleteEmailVerification(ctx context.Context, userId string) error
+	UpdateEmailVerificationOtpHmac(ctx context.Context, userId string, hmac []byte) error
 }
 
 type userRepo struct {
@@ -48,27 +45,25 @@ func NewUserRepo(db bun.IDB) UserRepo {
 	}
 }
 
-func (r *userRepo) Create(ctx context.Context, id string, email string, passwordDigest string) error {
+func (r *userRepo) Create(
+	ctx context.Context,
+	userId string,
+	email string,
+	passwordDigest string,
+	emailVerificationExpiresAt time.Time,
+	emailVerificationCooldownResetsAt time.Time,
+) error {
 	user := &models.User{
-		ID:             id,
-		Email:          email,
-		PasswordDigest: passwordDigest,
+		ID:                                userId,
+		Email:                             email,
+		PasswordDigest:                    passwordDigest,
+		EmailVerificationExpiresAt:        sql.NullTime{Valid: true, Time: emailVerificationExpiresAt},
+		EmailVerificationCooldownResetsAt: sql.NullTime{Valid: true, Time: emailVerificationCooldownResetsAt},
 	}
 
-	_, err := r.db.NewInsert().Model(user).Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *userRepo) UpdatePasswordResetRateLimit(ctx context.Context, userID string, rateLimitUntil time.Time) error {
-	_, err := r.db.NewUpdate().
-		Model((*models.User)(nil)).
-		Where("id = ?", userID).
-		Set("password_reset_rate_limited_until = ?", rateLimitUntil).
-		Set("updated_at = now()").
+	_, err := r.db.NewInsert().
+		Model(user).
+		Value("email_verification_last_requested_at", "now()").
 		Exec(ctx)
 
 	return err

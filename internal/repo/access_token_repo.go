@@ -17,10 +17,7 @@ type AccessTokenRepo interface {
 		secret []byte,
 		expiresAt time.Time,
 	) error
-	FindById(
-		ctx context.Context,
-		id string,
-	) (*models.AccessToken, error)
+	FindById(ctx context.Context, id string) (*models.AccessToken, error)
 }
 
 type accessTokenRepo struct {

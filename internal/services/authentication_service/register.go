@@ -45,6 +45,9 @@ func (s *authenticationService) Register(ctx context.Context, email string, pass
 			}
 		}
 
+		verificationExpiresAt := time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCodeTTL)
+		veriticationCooldownResetsAt := time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCooldown)
+
 		if user == nil {
 			// Create a new user
 			newUUID, err := generateUUID()
@@ -58,8 +61,14 @@ func (s *authenticationService) Register(ctx context.Context, email string, pass
 				return err
 			}
 
-			err = userRepo.Create(ctx, userID, email, passwordDigest)
-			if err != nil {
+			if err := userRepo.Create(
+				ctx,
+				userID,
+				email,
+				passwordDigest,
+				verificationExpiresAt,
+				veriticationCooldownResetsAt,
+			); err != nil {
 				// Handle unique constraint error
 				if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "23505" {
 					logger.DebugContext(ctx, ErrUserAlreadyExists.Error(), "user_id", userID, "email", email)
@@ -85,16 +94,16 @@ func (s *authenticationService) Register(ctx context.Context, email string, pass
 
 				return ErrEmailVerificationCooldown
 			}
-		}
 
-		// Reset OTP hash and attempts, update cooldown and OTP expiration time
-		if err := userRepo.StartEmailVerification(
-			ctx,
-			userID,
-			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCodeTTL),
-			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCooldown),
-		); err != nil {
-			return err
+			// Reset OTP hash and attempts, update cooldown and OTP expiration time
+			if err := userRepo.StartEmailVerification(
+				ctx,
+				userID,
+				verificationExpiresAt,
+				veriticationCooldownResetsAt,
+			); err != nil {
+				return err
+			}
 		}
 
 		return nil

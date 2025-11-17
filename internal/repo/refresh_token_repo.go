@@ -19,9 +19,7 @@ type RefreshTokenRepo interface {
 		secret []byte,
 		expiresAt time.Time,
 	) error
-
 	FindById(ctx context.Context, id string) (*models.RefreshToken, error)
-
 	Revoke(ctx context.Context, id string, revokedAt time.Time, leewayExpiresAt time.Time) error
 }
 

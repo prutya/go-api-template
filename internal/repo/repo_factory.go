@@ -5,7 +5,6 @@ import "github.com/uptrace/bun"
 type RepoFactory interface {
 	NewAccessTokenRepo(db bun.IDB) AccessTokenRepo
 	NewEmailSendAttemptRepo(db bun.IDB) EmailSendAttemptRepo
-	NewPasswordResetTokenRepo(db bun.IDB) PasswordResetTokenRepo
 	NewRefreshTokenRepo(db bun.IDB) RefreshTokenRepo
 	NewSessionRepo(db bun.IDB) SessionRepo
 	NewUserRepo(db bun.IDB) UserRepo
@@ -23,10 +22,6 @@ func (f *repoFactory) NewAccessTokenRepo(db bun.IDB) AccessTokenRepo {
 
 func (f *repoFactory) NewEmailSendAttemptRepo(db bun.IDB) EmailSendAttemptRepo {
 	return NewEmailSendAttemptRepo(db)
-}
-
-func (f *repoFactory) NewPasswordResetTokenRepo(db bun.IDB) PasswordResetTokenRepo {
-	return NewPasswordResetTokenRepo(db)
 }
 
 func (f *repoFactory) NewRefreshTokenRepo(db bun.IDB) RefreshTokenRepo {
