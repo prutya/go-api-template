@@ -34,7 +34,7 @@ func (s *authenticationService) createTokens(
 	}
 
 	// Generate a refresh token secret
-	refreshTokenSecret, err := generateSecret(s.config.AuthenticationRefreshTokenSecretLength)
+	refreshTokenSecret, err := generateRandomBytes(s.config.AuthenticationRefreshTokenSecretLength)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (s *authenticationService) createTokens(
 	}
 
 	// Generate a new access token secret
-	accessTokenSecret, err := generateSecret(s.config.AuthenticationAccessTokenSecretLength)
+	accessTokenSecret, err := generateRandomBytes(s.config.AuthenticationAccessTokenSecretLength)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,7 @@ x-shared-configuration:
       - "${GO_API_TEMPLATE_ROOT:-.}/db:/db"
 
   postgres: &postgres
-    image: docker.io/postgres:18.0-alpine3.22
+    image: docker.io/postgres:18.1-alpine3.22
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -47,6 +47,25 @@ services:
     volumes:
       - "${GO_API_TEMPLATE_ROOT:-.}/db:/db"
     entrypoint: ["psql", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"]
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dump_schema:
+    <<: [*postgres]
+    volumes:
+      - "${GO_API_TEMPLATE_ROOT:-.}/db:/db"
+    command: ["/bin/sh", "-c", "
+      pg_dump --format=plain --encoding=UTF8 --schema-only --no-privileges --no-owner \
+        \"postgres://postgres:postgres@postgres:5432/postgres\" \
+        > /db/schema.sql
+      &&
+      pg_dump --inserts --data-only --table=schema_migrations \
+        \"postgres://postgres:postgres@postgres:5432/postgres\" \
+        >> /db/schema.sql
+      "]
     networks:
       - app_dev
     depends_on:

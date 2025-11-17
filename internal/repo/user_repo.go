@@ -16,8 +16,15 @@ type UserRepo interface {
 	MarkEmailAsVerified(ctx context.Context, userID string) error
 	FindByID(ctx context.Context, userID string) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	FindByEmailForUpdateNowait(ctx context.Context, email string) (*models.User, error)
 	UpdatePasswordDigest(ctx context.Context, userID string, newPasswordDigest string) error
 	Delete(ctx context.Context, userID string) error
+	ResetEmailVerification(
+		ctx context.Context,
+		userId string,
+		emailVerificationExpiresAt time.Time,
+		emailVerificationCooldownResetsAt time.Time,
+	) error
 }
 
 type userRepo struct {
@@ -103,6 +110,21 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*models.User,
 	return user, nil
 }
 
+func (r *userRepo) FindByEmailForUpdateNowait(ctx context.Context, email string) (*models.User, error) {
+	user := new(models.User)
+	err := r.db.NewSelect().
+		Model(user).
+		Where("lower(email) = lower(?)", email).
+		For("UPDATE NOWAIT").
+		Scan(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (r *userRepo) UpdatePasswordDigest(ctx context.Context, userID string, newPasswordDigest string) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
@@ -111,11 +133,7 @@ func (r *userRepo) UpdatePasswordDigest(ctx context.Context, userID string, newP
 		Where("id = ?", userID).
 		Exec(ctx)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r *userRepo) Delete(ctx context.Context, userID string) error {
@@ -125,4 +143,28 @@ func (r *userRepo) Delete(ctx context.Context, userID string) error {
 		Exec(ctx)
 
 	return err
+}
+
+func (r *userRepo) ResetEmailVerification(
+	ctx context.Context,
+	userId string,
+	emailVerificationExpiresAt time.Time,
+	emailVerificationCooldownResetsAt time.Time,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("email_verification_otp_hmac = null").
+		Set("email_verification_expires_at = ?", emailVerificationExpiresAt).
+		Set("email_verification_otp_attempts = 0").
+		Set("email_verification_cooldown_resets_at = ?", emailVerificationCooldownResetsAt).
+		Set("email_verification_last_requested_at = now()").
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

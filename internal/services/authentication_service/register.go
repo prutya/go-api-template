@@ -4,14 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/uptrace/bun"
 )
 
 var ErrEmailDomainNotAllowed = errors.New("email domain not allowed")
 
-// NOTE: I am not using transactions here, because it's just a single write
-// operation
 func (s *authenticationService) Register(ctx context.Context, email string, password string) error {
 	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
 
@@ -20,48 +20,86 @@ func (s *authenticationService) Register(ctx context.Context, email string, pass
 		return ErrEmailDomainNotAllowed
 	}
 
-	// Check if the email is already registered
+	var userID string
 
-	userRepo := s.repoFactory.NewUserRepo(s.db)
+	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		userRepo := s.repoFactory.NewUserRepo(tx)
 
-	user, err := userRepo.FindByEmail(ctx, email)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			// User not found, continue
-		} else {
-			return err
+		user, err := userRepo.FindByEmailForUpdateNowait(ctx, email)
+		if err != nil {
+			// Handle postgres lock error
+			if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "55P03" {
+				return ErrUserLocked
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				// User not found, continue
+			} else {
+				return err
+			}
 		}
-	}
 
-	if user != nil {
-		// If the email is already registered, and is verified, do nothing
-		if user.EmailVerifiedAt.Valid {
+		if user != nil {
+			userID = user.ID
+
+			// If the email is already registered, and is verified, do nothing
+			if user.EmailVerifiedAt.Valid {
+				return ErrEmailAlreadyVerified
+			}
+
+			// Check cooldown
+			if user.EmailVerificationCooldownResetsAt.Valid && user.EmailVerificationCooldownResetsAt.Time.After(time.Now().UTC()) {
+				return ErrEmailVerificationCooldown
+			}
+
+			// Reset OTP hash and attempts, update cooldown and OTP expiration time
+			if err := userRepo.ResetEmailVerification(
+				ctx,
+				userID,
+				// TODO: Extract configuration variables
+				time.Now().UTC().Add(15*time.Minute),
+				time.Now().UTC().Add(1*time.Minute),
+			); err != nil {
+				return err
+			}
+
 			return nil
 		}
 
-		// If the email is already registered, and is not verified, send a new
-		// verification email
-		if err := s.scheduleEmailVerification(ctx, user.ID); err != nil {
+		// Create a new user
+		userID_tx, err := generateUUID()
+		if err != nil {
+			return err
+		}
+		userID = userID_tx
+
+		// TODO: Extract configuration variables
+		passwordDigest, err := argon2GenerateHashFromPassword(
+			password,
+			&argon2params{
+				memory:      64 * 1024,
+				iterations:  3,
+				parallelism: 2,
+				saltLength:  16,
+				keyLength:   32,
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		err = userRepo.Create(ctx, userID, email, passwordDigest)
+		if err != nil {
+			// Handle unique constraint error
+			if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "23505" {
+				return ErrUserAlreadyExists
+			}
+
 			return err
 		}
 
 		return nil
-	}
-
-	// Create a new user
-
-	userID, err := generateUUID()
-	if err != nil {
-		return err
-	}
-
-	passwordDigest, err := bcrypt.GenerateFromPassword([]byte(password), s.config.AuthenticationBcryptCost)
-	if err != nil {
-		return err
-	}
-
-	err = userRepo.Create(ctx, userID, email, string(passwordDigest))
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 

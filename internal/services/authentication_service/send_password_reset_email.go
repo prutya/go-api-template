@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"net/url"
-	"prutya/go-api-template/internal/logger"
 	text_template "text/template"
 	"time"
 
@@ -54,14 +53,14 @@ func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, user
 		return err
 	}
 
-	// Check if password reset is rate limited
-	if user.PasswordResetRateLimitedUntil.Valid {
-		if user.PasswordResetRateLimitedUntil.Time.After(time.Now()) {
-			logger.MustFromContext(ctx).WarnContext(ctx, "password reset rate limited", "user_id", user.ID, "error", err)
+	// // Check if password reset is rate limited
+	// if user.PasswordResetRateLimitedUntil.Valid {
+	// 	if user.PasswordResetRateLimitedUntil.Time.After(time.Now()) {
+	// 		logger.MustFromContext(ctx).WarnContext(ctx, "password reset rate limited", "user_id", user.ID, "error", err)
 
-			return ErrPasswordResetRateLimited
-		}
-	}
+	// 		return ErrPasswordResetRateLimited
+	// 	}
+	// }
 
 	// Generate a new password reset token and store it
 	tokenID, err := generateUUID()
@@ -69,7 +68,7 @@ func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, user
 		return err
 	}
 
-	tokenSecret, err := generateSecret(s.config.AuthenticationPasswordResetTokenSecretLength)
+	tokenSecret, err := generateRandomBytes(s.config.AuthenticationPasswordResetTokenSecretLength)
 	if err != nil {
 		return err
 	}

@@ -29,14 +29,6 @@ func (h *sendVerificationEmailTaskHandler) ProcessTask(ctx context.Context, task
 	}
 
 	if err := h.authenticationService.SendVerificationEmail(ctx, payload.UserID); err != nil {
-		if errors.Is(err, authentication_service.ErrUserNotFound) {
-			return asynq.RevokeTask
-		}
-
-		if errors.Is(err, authentication_service.ErrEmailVerificationRateLimited) {
-			return asynq.RevokeTask
-		}
-
 		if errors.Is(err, transactional_email_service.ErrGlobalLimitReached) {
 			return asynq.SkipRetry
 		}

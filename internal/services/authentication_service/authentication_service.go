@@ -14,9 +14,11 @@ import (
 	"prutya/go-api-template/internal/tasks_client"
 )
 
-var ErrEmailIsTaken = errors.New("email already taken")
-var ErrUserNotFound = errors.New("user not found")
+var ErrUserLocked = errors.New("user record is locked")
 var ErrEmailAlreadyVerified = errors.New("email already verified")
+var ErrEmailVerificationCooldown = errors.New("email verification cooldown")
+var ErrUserAlreadyExists = errors.New("user already exists")
+var ErrUserNotFound = errors.New("user not found")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrInvalidAccessTokenClaims = errors.New("invalid access token claims")
 var ErrAccessTokenNotFound = errors.New("access token not found")

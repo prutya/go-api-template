@@ -65,18 +65,18 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 	}
 
 	// Check if email verification is rate limited
-	if user.EmailVerificationRateLimitedUntil.Valid {
-		if user.EmailVerificationRateLimitedUntil.Time.After(time.Now()) {
-			logger.WarnContext(
-				ctx,
-				"email verification rate limited",
-				"user_id", userID,
-				"rate_limited_until", user.EmailVerificationRateLimitedUntil.Time,
-			)
+	// if user.EmailVerificationRateLimitedUntil.Valid {
+	// 	if user.EmailVerificationRateLimitedUntil.Time.After(time.Now()) {
+	// 		logger.WarnContext(
+	// 			ctx,
+	// 			"email verification rate limited",
+	// 			"user_id", userID,
+	// 			"rate_limited_until", user.EmailVerificationRateLimitedUntil.Time,
+	// 		)
 
-			return ErrEmailVerificationRateLimited
-		}
-	}
+	// 		return ErrEmailVerificationRateLimited
+	// 	}
+	// }
 
 	// Generate a new verification token and store it
 
@@ -85,7 +85,7 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 		return err
 	}
 
-	tokenSecret, err := generateSecret(s.config.AuthenticationEmailVerificationTokenSecretLength)
+	tokenSecret, err := generateRandomBytes(s.config.AuthenticationEmailVerificationTokenSecretLength)
 	if err != nil {
 		return err
 	}

@@ -10,12 +10,23 @@ import (
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
-	ID                                string       `bun:"id,pk"`
-	Email                             string       `bun:"email"`
-	PasswordDigest                    string       `bun:"password_digest"`
-	EmailVerificationRateLimitedUntil sql.NullTime `bun:"email_verification_rate_limited_until"`
+	ID             string `bun:"id,pk"`
+	Email          string `bun:"email"`
+	PasswordDigest string `bun:"password_digest"`
+
 	EmailVerifiedAt                   sql.NullTime `bun:"email_verified_at"`
-	PasswordResetRateLimitedUntil     sql.NullTime `bun:"password_reset_rate_limited_until"`
-	CreatedAt                         time.Time    `bun:"created_at,default:now()"`
-	UpdatedAt                         time.Time    `bun:"updated_at,default:now()"`
+	EmailVerificationOtpHmac          []byte       `bun:"email_verification_otp_hmac"`
+	EmailVerificationExpiresAt        sql.NullTime `bun:"email_verification_expires_at"`
+	EmailVerificationOtpAttempts      int          `bun:"email_verification_otp_attempts"`
+	EmailVerificationCooldownResetsAt sql.NullTime `bun:"email_verification_cooldown_resets_at"`
+	EmailVerificationLastRequestedAt  sql.NullTime `bun:"email_verification_last_requested_at"`
+
+	PasswordResetOtpHmac          []byte       `bun:"password_reset_otp_hmac"`
+	PasswordResetExpiresAt        sql.NullTime `bun:"password_reset_expires_at"`
+	PasswordResetOtpAttempts      int          `bun:"password_reset_otp_attempts"`
+	PasswordResetCooldownResetsAt sql.NullTime `bun:"password_reset_cooldown_resets_at"`
+	PasswordResetLastRequestedAt  sql.NullTime `bun:"password_reset_last_requested_at"`
+
+	CreatedAt time.Time `bun:"created_at,default:now()"`
+	UpdatedAt time.Time `bun:"updated_at,default:now()"`
 }
