@@ -2,6 +2,8 @@ package authentication_service
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -9,7 +11,6 @@ import (
 	"prutya/go-api-template/internal/logger"
 )
 
-// NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) Authenticate(
 	ctx context.Context,
 	accessToken string,
@@ -37,8 +38,13 @@ func (s *authenticationService) Authenticate(
 			return nil, ErrAccessTokenNotFound
 		}
 
-		return dbAccessToken.Secret, nil
-	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
+		publicKey, err := x509.ParsePKIXPublicKey(dbAccessToken.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return publicKey.(*ecdsa.PublicKey), nil
+	}, jwt.WithValidMethods([]string{"ES256"}), jwt.WithExpirationRequired())
 
 	if err != nil {
 		if errors.Is(err, ErrInvalidAccessTokenClaims) || errors.Is(err, ErrAccessTokenNotFound) {

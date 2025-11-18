@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict rcTeYSFPUAiah285qxa68ps06ESTjZJpdq0NYfhX4MgqecOc5pYn5ccdfZaEgRG
+\restrict sjxadLwv5gtyC9MV43dxqbW7LgMc9BCbNipwuA9242SNsglalZO1VUo2lsn411k
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -44,7 +44,7 @@ SET default_table_access_method = heap;
 CREATE TABLE public.access_tokens (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     refresh_token_id uuid NOT NULL,
-    secret bytea NOT NULL,
+    public_key bytea NOT NULL,
     expires_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -89,7 +89,7 @@ CREATE TABLE public.refresh_tokens (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     session_id uuid NOT NULL,
     parent_id uuid,
-    secret bytea NOT NULL,
+    public_key bytea NOT NULL,
     expires_at timestamp with time zone NOT NULL,
     revoked_at timestamp with time zone,
     leeway_expires_at timestamp with time zone,
@@ -281,13 +281,13 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rcTeYSFPUAiah285qxa68ps06ESTjZJpdq0NYfhX4MgqecOc5pYn5ccdfZaEgRG
+\unrestrict sjxadLwv5gtyC9MV43dxqbW7LgMc9BCbNipwuA9242SNsglalZO1VUo2lsn411k
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict A2KcthyK0fh92OLQZC2TaqwUN9y7BJ1orcDBaxMnX9RhztDCrstepGzfFK1weS3
+\restrict LxeU5nhxh10ong6AG6Uzv3tlpldsMSc5nNTYQOAah96Dsem8Vbj9qh5aSLkKfPn
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -316,5 +316,4 @@ INSERT INTO public.schema_migrations VALUES ('20251116174456');
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A2KcthyK0fh92OLQZC2TaqwUN9y7BJ1orcDBaxMnX9RhztDCrstepGzfFK1weS3
-
+\unrestrict LxeU5nhxh10ong6AG6Uzv3tlpldsMSc5nNTYQOAah96Dsem8Vbj9qh5aSLkKfPn

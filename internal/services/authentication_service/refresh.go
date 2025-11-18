@@ -2,6 +2,8 @@ package authentication_service
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"database/sql"
 	"errors"
 	"time"
@@ -42,8 +44,13 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 
 		dbRefreshToken = dbRefreshToken_inner
 
-		return dbRefreshToken_inner.Secret, nil
-	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
+		publicKey, err := x509.ParsePKIXPublicKey(dbRefreshToken.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return publicKey.(*ecdsa.PublicKey), nil
+	}, jwt.WithValidMethods([]string{"ES256"}), jwt.WithExpirationRequired())
 
 	if err != nil {
 		if errors.Is(err, ErrInvalidRefreshTokenClaims) || errors.Is(err, ErrRefreshTokenNotFound) {

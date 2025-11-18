@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"prutya/go-api-template/internal/logger"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/uptrace/bun"
+
+	"prutya/go-api-template/internal/logger"
 )
 
 var ErrEmailDomainNotAllowed = errors.New("email domain not allowed")

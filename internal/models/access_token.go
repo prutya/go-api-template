@@ -11,7 +11,7 @@ type AccessToken struct {
 
 	ID             string    `bun:"id,pk"`
 	RefreshTokenID string    `bun:"refresh_token_id"`
-	Secret         []byte    `bun:"secret"`
+	PublicKey      []byte    `bun:"public_key"`
 	ExpiresAt      time.Time `bun:"expires_at"`
 	CreatedAt      time.Time `bun:"created_at,default:now()"`
 	UpdatedAt      time.Time `bun:"updated_at,default:now()"`

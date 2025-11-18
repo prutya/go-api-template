@@ -2,6 +2,10 @@ package authentication_service
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
 	"database/sql"
 	"time"
 
@@ -33,8 +37,12 @@ func (s *authenticationService) createTokens(
 		return nil, err
 	}
 
-	// Generate a refresh token secret
-	refreshTokenSecret, err := generateRandomBytes(s.config.AuthenticationRefreshTokenSecretLength)
+	// Generate refresh token key pair
+	refreshTokenPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	refreshTokenPublicKeyBytes, err := x509.MarshalPKIXPublicKey(&refreshTokenPrivateKey.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +53,7 @@ func (s *authenticationService) createTokens(
 		refreshTokenId,
 		sessionId,
 		parentRefreshTokenId,
-		refreshTokenSecret,
+		refreshTokenPublicKeyBytes,
 		refreshTokenExpiresAt,
 	); err != nil {
 		return nil, err
@@ -57,8 +65,12 @@ func (s *authenticationService) createTokens(
 		return nil, err
 	}
 
-	// Generate a new access token secret
-	accessTokenSecret, err := generateRandomBytes(s.config.AuthenticationAccessTokenSecretLength)
+	// Generate access token key pair
+	accessTokenPrivateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	accessTokenPublicKeyBytes, err := x509.MarshalPKIXPublicKey(&accessTokenPrivateKey.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +83,7 @@ func (s *authenticationService) createTokens(
 		ctx,
 		accessTokenId,
 		refreshTokenId,
-		accessTokenSecret,
+		accessTokenPublicKeyBytes,
 		accessTokenExpiresAt,
 	); err != nil {
 		return nil, err
@@ -89,8 +101,8 @@ func (s *authenticationService) createTokens(
 		},
 		UserID: userId,
 	}
-	refreshTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
-	refreshTokenString, err := refreshTokenJWT.SignedString(refreshTokenSecret)
+	refreshTokenJWT := jwt.NewWithClaims(jwt.SigningMethodES256, refreshTokenClaims)
+	refreshTokenString, err := refreshTokenJWT.SignedString(refreshTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +117,8 @@ func (s *authenticationService) createTokens(
 		},
 		UserID: userId,
 	}
-	accessTokenJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
-	accessTokenString, err := accessTokenJWT.SignedString(accessTokenSecret)
+	accessTokenJWT := jwt.NewWithClaims(jwt.SigningMethodES256, accessTokenClaims)
+	accessTokenString, err := accessTokenJWT.SignedString(accessTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}

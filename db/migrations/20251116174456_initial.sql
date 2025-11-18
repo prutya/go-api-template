@@ -46,7 +46,7 @@ create table refresh_tokens (
   id uuid primary key default gen_random_uuid() not null,
   session_id uuid not null references sessions(id) on delete cascade on update cascade,
   parent_id uuid references refresh_tokens(id) on delete cascade on update cascade,
-  "secret" bytea not null,
+  public_key bytea not null,
   expires_at timestamptz not null,
   revoked_at timestamptz,
   leeway_expires_at timestamptz,
@@ -69,7 +69,7 @@ create index refresh_tokens_parent_id_idx ON refresh_tokens(parent_id);
 create table access_tokens (
   id uuid primary key default gen_random_uuid() not null,
   refresh_token_id uuid not null references refresh_tokens(id) on delete cascade on update cascade,
-  "secret" bytea not null,
+  public_key bytea not null,
   expires_at timestamptz not null,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null

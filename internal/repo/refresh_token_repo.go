@@ -36,14 +36,14 @@ func (r *refreshTokenRepo) Create(
 	refreshTokenId string,
 	sessionId string,
 	parentId sql.NullString,
-	secret []byte,
+	publicKey []byte,
 	expiresAt time.Time,
 ) error {
 	refreshToken := &models.RefreshToken{
 		ID:        refreshTokenId,
 		SessionID: sessionId,
 		ParentID:  parentId,
-		Secret:    secret,
+		PublicKey: publicKey,
 		ExpiresAt: expiresAt,
 	}
 
