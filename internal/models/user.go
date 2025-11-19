@@ -26,6 +26,7 @@ type User struct {
 	PasswordResetOtpAttempts      int          `bun:"password_reset_otp_attempts"`
 	PasswordResetCooldownResetsAt sql.NullTime `bun:"password_reset_cooldown_resets_at"`
 	PasswordResetLastRequestedAt  sql.NullTime `bun:"password_reset_last_requested_at"`
+	PasswordResetTokenPublicKey   []byte       `bun:"password_reset_token_public_key"`
 
 	CreatedAt time.Time `bun:"created_at,default:now()"`
 	UpdatedAt time.Time `bun:"updated_at,default:now()"`

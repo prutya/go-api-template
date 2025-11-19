@@ -19,6 +19,7 @@ create table users (
   password_reset_otp_attempts int not null default 0,
   password_reset_cooldown_resets_at timestamptz,
   password_reset_last_requested_at timestamptz,
+  password_reset_token_public_key bytea,
 
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

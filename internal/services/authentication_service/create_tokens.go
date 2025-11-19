@@ -96,8 +96,8 @@ func (s *authenticationService) createTokens(
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        refreshTokenId,
 			ExpiresAt: jwt.NewNumericDate(refreshTokenExpiresAt),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
 		UserID: userId,
 	}
@@ -112,8 +112,8 @@ func (s *authenticationService) createTokens(
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        accessTokenId,
 			ExpiresAt: jwt.NewNumericDate(accessTokenExpiresAt),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
 		UserID: userId,
 	}

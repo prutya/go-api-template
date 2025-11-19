@@ -2,105 +2,96 @@ package authentication_service
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/x509"
+	"database/sql"
 	"errors"
+	"prutya/go-api-template/internal/logger"
+	"prutya/go-api-template/internal/models"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-var ErrInvalidResetPasswordTokenClaims = errors.New("invalid reset password token claims")
-var ErrResetPasswordTokenNotFound = errors.New("reset password token not found")
-var ErrResetPasswordTokenInvalid = errors.New("reset password token invalid")
+// TODO: Move errors from the common file closer to each method to reduce
+// WTFs per second when reading this code
 
-func (s *authenticationService) ResetPassword(ctx context.Context, token string, newPassword string) error {
+func (s *authenticationService) ResetPassword(
+	ctx context.Context,
+	token string,
+	newPassword string,
+	userAgent string,
+	ipAddress string,
+) (*CreateTokensResult, error) {
 	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
-	return errors.New("not implemented")
+	logger := logger.MustFromContext(ctx)
+	userRepo := s.repoFactory.NewUserRepo(s.db)
+	sessionRepo := s.repoFactory.NewSessionRepo(s.db)
 
-	// passwordResetTokenRepo := s.repoFactory.NewPasswordResetTokenRepo(s.db)
-	// userRepo := s.repoFactory.NewUserRepo(s.db)
-	// sessionRepo := s.repoFactory.NewSessionRepo(s.db)
+	var user *models.User
 
-	// // Parse the token
+	// Prepare the validation key function
+	keyFunc := func(token *jwt.Token) (any, error) {
+		// Extract the claims
+		claims, ok := token.Claims.(*PasswordResetTokenClaims)
+		if !ok {
+			return nil, ErrInvalidPasswordResetTokenClaims
+		}
 
-	// var dbPasswordResetToken *models.PasswordResetToken
+		// Find the user by ID
+		user_keyfunc, err := userRepo.FindByID(ctx, claims.UserID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				logger.DebugContext(ctx, ErrUserNotFound.Error(), "user_id", claims.UserID)
 
-	// _, err := jwt.ParseWithClaims(token, &PasswordResetTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-	// 	// Extract the claims
-	// 	passwordResetTokenClaims_inner, ok := token.Claims.(*PasswordResetTokenClaims)
-	// 	if !ok {
-	// 		return nil, ErrInvalidResetPasswordTokenClaims
-	// 	}
+				return "", ErrUserNotFound
+			}
 
-	// 	// Find the password reset token by ID
-	// 	dbPasswordResetToken_inner, err := passwordResetTokenRepo.FindByID(ctx, passwordResetTokenClaims_inner.ID)
-	// 	if err != nil {
-	// 		return nil, ErrResetPasswordTokenNotFound
-	// 	}
+			return nil, err
+		}
+		user = user_keyfunc
 
-	// 	dbPasswordResetToken = dbPasswordResetToken_inner
+		publicKey, err := x509.ParsePKIXPublicKey(user.PasswordResetTokenPublicKey)
+		if err != nil {
+			return nil, err
+		}
 
-	// 	return dbPasswordResetToken_inner.Secret, nil
-	// }, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
+		return publicKey.(*ecdsa.PublicKey), nil
+	}
 
-	// if err != nil {
-	// 	if errors.Is(err, ErrInvalidResetPasswordTokenClaims) || errors.Is(err, ErrResetPasswordTokenNotFound) {
-	// 		return err
-	// 	}
+	// Validate the token
+	if _, err := jwt.ParseWithClaims(
+		token,
+		&PasswordResetTokenClaims{},
+		keyFunc,
+		jwt.WithValidMethods([]string{"ES256"}),
+		jwt.WithExpirationRequired(),
+	); err != nil {
+		logger.WarnContext(ctx, "Password reset token verification failed", "error", err.Error())
+		logger.DebugContext(ctx, "Password reset token verification failed", "password_reset_token", token)
 
-	// 	return ErrResetPasswordTokenInvalid
-	// }
+		return nil, ErrInvalidPasswordResetToken
+	}
 
-	// // Check if the token has already been used
-	// if dbPasswordResetToken.ResetAt.Valid {
-	// 	logger := logger.MustFromContext(ctx)
+	// Terminate all sessions for the user
+	if err := sessionRepo.TerminateAllSessions(ctx, user.ID); err != nil {
+		return nil, err
+	}
 
-	// 	logger.WarnContext(
-	// 		ctx,
-	// 		"password reset token already used",
-	// 		"password_reset_token_id", dbPasswordResetToken.ID,
-	// 	)
+	// Hash the new password
+	newPasswordDigest, err := s.argon2GenerateHashFromPassword(newPassword)
+	if err != nil {
+		return nil, err
+	}
 
-	// 	return ErrResetPasswordTokenInvalid
-	// }
+	// Update the password and invalidate the token
+	if err := userRepo.ResetPassword(ctx, user.ID, newPasswordDigest); err != nil {
+		return nil, err
+	}
 
-	// // Find the user by ID
-	// dbUser, err := userRepo.FindByID(ctx, dbPasswordResetToken.UserID)
-	// if err != nil {
-	// 	return err
-	// }
+	// Log the user in
+	refreshTokenRepo := s.repoFactory.NewRefreshTokenRepo(s.db)
+	accessTokenRepo := s.repoFactory.NewAccessTokenRepo(s.db)
 
-	// // Hash the new password
-	// newPasswordDigest, err := bcrypt.GenerateFromPassword([]byte(newPassword), s.config.AuthenticationBcryptCost)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // NOTE: The token can only be used once, so we should make sure that it's
-	// // applied properly via a transaction
-
-	// if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-	// 	userRepo := s.repoFactory.NewUserRepo(tx)
-	// 	passwordResetTokenRepo := s.repoFactory.NewPasswordResetTokenRepo(tx)
-
-	// 	// Update the user's password
-	// 	if err := userRepo.UpdatePasswordDigest(ctx, dbUser.ID, string(newPasswordDigest)); err != nil {
-	// 		return err
-	// 	}
-
-	// 	// Mark the password reset token as used
-	// 	if err := passwordResetTokenRepo.MarkAsReset(ctx, dbPasswordResetToken.ID); err != nil {
-	// 		return err
-	// 	}
-
-	// 	return nil
-	// }); err != nil {
-	// 	return err
-	// }
-
-	// // Terminate all sessions for the user
-	// // NOTE: This is not in the transaction, because it can be handled separately
-	// // manually in case it fails
-	// if err := sessionRepo.TerminateAllSessions(ctx, dbUser.ID); err != nil {
-	// 	return err
-	// }
-
-	// return nil
+	return s.createSession(ctx, sessionRepo, refreshTokenRepo, accessTokenRepo, user, userAgent, ipAddress)
 }

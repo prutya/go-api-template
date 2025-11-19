@@ -4,29 +4,71 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/uptrace/bun"
+
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/tasks"
 )
 
-// NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) RequestPasswordReset(ctx context.Context, email string) error {
 	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
-	userRepo := s.repoFactory.NewUserRepo(s.db)
+	logger := logger.MustFromContext(ctx)
 
-	// Find the user by email
-	user, err := userRepo.FindByEmail(ctx, email)
+	var userID string
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrUserNotFound
+	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		userRepo := s.repoFactory.NewUserRepo(tx)
+
+		user, err := userRepo.FindByEmailForUpdateNowait(ctx, email)
+		if err != nil {
+			// Handle postgres lock error
+			if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "55P03" {
+				logger.DebugContext(ctx, pgErr.Error(), "email", email)
+
+				return ErrUserRecordLocked
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				logger.DebugContext(ctx, ErrUserNotFound.Error(), "email", email)
+
+				return ErrUserNotFound
+			}
+
+			return err
 		}
 
+		userID = user.ID
+
+		// Check cooldown
+		if user.PasswordResetCooldownResetsAt.Valid && user.PasswordResetCooldownResetsAt.Time.After(time.Now().UTC()) {
+			logger.DebugContext(ctx, ErrPasswordResetCooldown.Error(), "user_id", userID, "email", email)
+
+			return ErrPasswordResetCooldown
+		}
+
+		currentTime := time.Now().UTC()
+
+		// Reset OTP hash and attempts, update cooldown and OTP expiration time
+		if err := userRepo.StartPasswordReset(
+			ctx,
+			userID,
+			currentTime.Add(s.config.AuthenticationPasswordResetCodeTTL),
+			currentTime.Add(s.config.AuthenticationPasswordResetCooldown),
+		); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
 
 	// Schedule a password reset email
-	task, err := tasks.NewSendPasswordResetEmailTask(user.ID)
+	task, err := tasks.NewSendPasswordResetEmailTask(userID)
 	if err != nil {
 		return err
 	}

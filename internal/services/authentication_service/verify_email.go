@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-var ErrInvalidEmailVerificationTokenClaims = errors.New("invalid email verification token claims")
-var ErrEmailVerificationTokenNotFound = errors.New("email verification token not found")
-var ErrEmailVerificationTokenInvalid = errors.New("email verification token invalid")
-
 func (s *authenticationService) VerifyEmail(
 	ctx context.Context,
 	email string,
@@ -27,7 +23,7 @@ func (s *authenticationService) VerifyEmail(
 	user, err := userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			logger.DebugContext(ctx, "user not found", "email", email)
+			logger.DebugContext(ctx, ErrUserNotFound.Error(), "email", email)
 
 			return nil, ErrUserNotFound
 		}
@@ -37,21 +33,21 @@ func (s *authenticationService) VerifyEmail(
 
 	// Check number of attempts
 	if user.EmailVerificationOtpAttempts >= s.config.AuthenticationEmailVerificationMaxAttempts {
-		logger.DebugContext(ctx, "Too many email verification attempts", "user_id", user.ID)
+		logger.DebugContext(ctx, ErrTooManyOTPAttempts.Error(), "user_id", user.ID)
 
 		return nil, ErrTooManyOTPAttempts
 	}
 
 	// Check expiration
 	if !user.EmailVerificationExpiresAt.Valid {
-		logger.WarnContext(ctx, "User's email_verification_expires_at is null", "user_id", user.ID)
+		logger.DebugContext(ctx, ErrEmailVerificationNotRequested.Error(), "user_id", user.ID)
 
 		// This should not be null at this point
-		return nil, ErrEmailVerificationExpired
+		return nil, ErrEmailVerificationNotRequested
 	}
 
 	if user.EmailVerificationExpiresAt.Time.Before(time.Now().UTC()) {
-		logger.DebugContext(ctx, "Email verification expired", "user_id", user.ID)
+		logger.DebugContext(ctx, ErrEmailVerificationExpired.Error(), "user_id", user.ID)
 
 		return nil, ErrEmailVerificationExpired
 	}
@@ -63,7 +59,7 @@ func (s *authenticationService) VerifyEmail(
 	}
 
 	if !hmacOk {
-		logger.DebugContext(ctx, "Invalid OTP", "user_id", user.ID, "otp", otp)
+		logger.DebugContext(ctx, ErrInvalidOTP.Error(), "user_id", user.ID, "otp", otp)
 
 		if err := userRepo.IncrementEmailVerificationAttempts(ctx, user.ID); err != nil {
 			return nil, err
@@ -73,6 +69,8 @@ func (s *authenticationService) VerifyEmail(
 	}
 
 	if user.EmailVerifiedAt.Valid {
+		logger.DebugContext(ctx, ErrEmailAlreadyVerified.Error(), "user_id", user.ID)
+
 		return nil, ErrEmailAlreadyVerified
 	}
 
@@ -80,7 +78,7 @@ func (s *authenticationService) VerifyEmail(
 		return nil, err
 	}
 
-	// Create a new session for the user
+	// Log the user in
 	sessionRepo := s.repoFactory.NewSessionRepo(s.db)
 	refreshTokenRepo := s.repoFactory.NewRefreshTokenRepo(s.db)
 	accessTokenRepo := s.repoFactory.NewAccessTokenRepo(s.db)

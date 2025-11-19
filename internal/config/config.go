@@ -49,6 +49,8 @@ type Config struct {
 	AuthenticationEmailVerificationMaxAttempts int           `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_MAX_ATTEMPTS"`
 	AuthenticationPasswordResetCooldown        time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_COOLDOWN"`
 	AuthenticationPasswordResetCodeTTL         time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_CODE_TTL"`
+	AuthenticationPasswordResetMaxAttempts     int           `mapstructure:"AUTHENTICATION_PASSWORD_RESET_MAX_ATTEMPTS"`
+	AuthenticationPasswordResetTokenTTL        time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_TOKEN_TTL"`
 	AuthenticationArgon2Memory                 uint32        `mapstructure:"AUTHENTICATION_ARGON2_MEMORY"`
 	AuthenticationArgon2Iterations             uint32        `mapstructure:"AUTHENTICATION_ARGON2_ITERATIONS"`
 	AuthenticationArgon2Parallelism            uint8         `mapstructure:"AUTHENTICATION_ARGON2_PARALLELISM"`
@@ -125,6 +127,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_email_verification_max_attempts", 5)
 	viper.SetDefault("authentication_password_reset_cooldown", 1*time.Minute)
 	viper.SetDefault("authentication_password_reset_code_ttl", 15*time.Minute)
+	viper.SetDefault("authentication_password_reset_max_attempts", 5)
+	viper.SetDefault("authentication_password_reset_token_ttl", 15*time.Minute)
 	viper.SetDefault("authentication_argon2_memory", uint32(64*1024))
 	viper.SetDefault("authentication_argon2_iterations", uint32(3))
 	viper.SetDefault("authentication_argon2_parallelism", uint8(2))

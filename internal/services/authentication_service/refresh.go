@@ -25,9 +25,8 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 
 	var dbRefreshToken *models.RefreshToken
 
-	// Parse the token
-
-	_, err := jwt.ParseWithClaims(refreshToken, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	// Prepare the validation key function
+	keyFunc := func(token *jwt.Token) (any, error) {
 		// Extract the claims
 		refreshTokenClaims, ok := token.Claims.(*RefreshTokenClaims)
 		if !ok {
@@ -35,14 +34,18 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		}
 
 		// Find the refresh token by ID
-		dbRefreshToken_inner, err := refreshTokenRepo.FindById(ctx, refreshTokenClaims.ID)
+		dbRefreshToken_keyfunc, err := refreshTokenRepo.FindById(ctx, refreshTokenClaims.ID)
 		if err != nil {
-			logger.WarnContext(ctx, "RefreshToken not found", "refresh_token_id", refreshTokenClaims.ID)
+			if errors.Is(err, sql.ErrNoRows) {
+				logger.DebugContext(ctx, ErrRefreshTokenNotFound.Error(), "refresh_token_id", refreshTokenClaims.ID)
 
-			return nil, ErrRefreshTokenNotFound
+				return nil, ErrRefreshTokenNotFound
+			}
+
+			return nil, err
 		}
 
-		dbRefreshToken = dbRefreshToken_inner
+		dbRefreshToken = dbRefreshToken_keyfunc
 
 		publicKey, err := x509.ParsePKIXPublicKey(dbRefreshToken.PublicKey)
 		if err != nil {
@@ -50,14 +53,21 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 		}
 
 		return publicKey.(*ecdsa.PublicKey), nil
-	}, jwt.WithValidMethods([]string{"ES256"}), jwt.WithExpirationRequired())
+	}
 
+	// Parse the token
+	_, err := jwt.ParseWithClaims(
+		refreshToken,
+		&RefreshTokenClaims{},
+		keyFunc,
+		jwt.WithValidMethods([]string{"ES256"}),
+		jwt.WithExpirationRequired(),
+	)
 	if err != nil {
-		if errors.Is(err, ErrInvalidRefreshTokenClaims) || errors.Is(err, ErrRefreshTokenNotFound) {
-			return nil, err
-		}
+		logger.WarnContext(ctx, "Refresh token verification failed", "error", err.Error())
+		logger.DebugContext(ctx, "Password reset token verification failed", "refresh_token", refreshToken)
 
-		return nil, ErrRefreshTokenInvalid
+		return nil, ErrInvalidRefreshToken
 	}
 
 	// Check if the refresh token is revoked
@@ -72,7 +82,7 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 			logger.WarnContext(ctx, "RefreshToken reuse detected", "refresh_token_id", dbRefreshToken.ID)
 
 			// The session is compromised, so we need to terminate it
-			if err := sessionRepo.TerminateByID(ctx, dbRefreshToken.SessionID, time.Now()); err != nil {
+			if err := sessionRepo.TerminateByID(ctx, dbRefreshToken.SessionID, time.Now().UTC()); err != nil {
 				logger.ErrorContext(ctx, "Failed to terminate session", "session_id", dbRefreshToken.SessionID, "error", err)
 
 				return nil, err
@@ -97,8 +107,6 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			logger.WarnContext(ctx, "Session not found", "session_id", dbRefreshToken.SessionID)
-
 			return nil, ErrSessionNotFound
 		}
 
@@ -106,17 +114,12 @@ func (s *authenticationService) Refresh(ctx context.Context, refreshToken string
 	}
 
 	if session.TerminatedAt.Valid {
-		logger.WarnContext(ctx, "Session already terminated", "session_id", dbRefreshToken.SessionID)
-
 		return nil, ErrSessionAlreadyTerminated
 	}
 
-	// NOTE: I am not using transactions here, because the revoked token still has
-	// a leeway time when it can be used again
-
 	// Revoke the old refresh token
 
-	revokedAt := time.Now()
+	revokedAt := time.Now().UTC()
 	leewayExpiresAt := revokedAt.Add(s.config.AuthenticationRefreshTokenLeeway)
 
 	if err := refreshTokenRepo.Revoke(ctx, dbRefreshToken.ID, revokedAt, leewayExpiresAt); err != nil {

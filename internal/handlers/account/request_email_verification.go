@@ -31,10 +31,10 @@ func NewRequestEmailVerificationHandler(
 			return
 		}
 
-		logger := logger.MustFromContext(r.Context())
-
 		// Request new verification email
 		if err := authenticationService.RequestNewVerificationEmail(r.Context(), reqBody.Email); err != nil {
+			logger.MustWarnContext(r.Context(), "Email verification request failed", "error", err.Error())
+
 			if errors.Is(err, authentication_service.ErrEmailDomainNotAllowed) {
 				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
 				return
@@ -46,8 +46,6 @@ func NewRequestEmailVerificationHandler(
 				errors.Is(err, authentication_service.ErrUserNotFound) ||
 				errors.Is(err, authentication_service.ErrEmailAlreadyVerified) ||
 				errors.Is(err, authentication_service.ErrEmailVerificationCooldown) {
-
-				logger.DebugContext(r.Context(), err.Error())
 
 				utils.RenderNoContent(w, r, nil)
 				return

@@ -22,7 +22,8 @@ type UserRepo interface {
 	FindByID(ctx context.Context, userID string) (*models.User, error)
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByEmailForUpdateNowait(ctx context.Context, email string) (*models.User, error)
-	UpdatePasswordDigest(ctx context.Context, userID string, newPasswordDigest string) error
+	ResetPassword(ctx context.Context, userID string, newPasswordDigest string) error
+	ChangePassword(ctx context.Context, userID string, newPasswordDigest string) error
 	Delete(ctx context.Context, userID string) error
 	StartEmailVerification(
 		ctx context.Context,
@@ -33,6 +34,19 @@ type UserRepo interface {
 	IncrementEmailVerificationAttempts(ctx context.Context, userId string) error
 	CompleteEmailVerification(ctx context.Context, userId string) error
 	UpdateEmailVerificationOtpHmac(ctx context.Context, userId string, hmac []byte) error
+	StartPasswordReset(
+		ctx context.Context,
+		userId string,
+		passwordResetExpiresAt time.Time,
+		passwordResetCooldownResetsAt time.Time,
+	) error
+	UpdatePasswordResetOtpHmac(ctx context.Context, userId string, hmac []byte) error
+	IncrementPasswordResetAttempts(ctx context.Context, userId string) error
+	StorePasswordResetTokenKey(
+		ctx context.Context,
+		userId string,
+		passwordResetTokenPublicKey []byte,
+	) error
 }
 
 type userRepo struct {
@@ -80,17 +94,6 @@ func (r *userRepo) FindByID(ctx context.Context, userID string) (*models.User, e
 	return user, nil
 }
 
-// func (r *userRepo) FindByIDForUpdate(ctx context.Context, userID string) (*models.User, error) {
-// 	user := new(models.User)
-// 	err := r.db.NewSelect().Model(user).Where("id = ?", userID).For("UPDATE").Scan(ctx)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return user, nil
-// }
-
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := new(models.User)
 	err := r.db.NewSelect().
@@ -120,7 +123,19 @@ func (r *userRepo) FindByEmailForUpdateNowait(ctx context.Context, email string)
 	return user, nil
 }
 
-func (r *userRepo) UpdatePasswordDigest(ctx context.Context, userID string, newPasswordDigest string) error {
+func (r *userRepo) ResetPassword(ctx context.Context, userID string, newPasswordDigest string) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("password_digest = ?", newPasswordDigest).
+		Set("password_reset_token_public_key = null").
+		Set("updated_at = now()").
+		Where("id = ?", userID).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) ChangePassword(ctx context.Context, userID string, newPasswordDigest string) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
 		Set("password_digest = ?", newPasswordDigest).
@@ -199,6 +214,73 @@ func (r *userRepo) UpdateEmailVerificationOtpHmac(
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
 		Set("email_verification_otp_hmac = ?", hmac).
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) StartPasswordReset(
+	ctx context.Context,
+	userId string,
+	passwordResetExpiresAt time.Time,
+	passwordResetCooldownResetsAt time.Time,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("password_reset_otp_hmac = null").
+		Set("password_reset_expires_at = ?", passwordResetExpiresAt).
+		Set("password_reset_otp_attempts = 0").
+		Set("password_reset_cooldown_resets_at = ?", passwordResetCooldownResetsAt).
+		Set("password_reset_last_requested_at = now()").
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) UpdatePasswordResetOtpHmac(
+	ctx context.Context,
+	userId string,
+	hmac []byte,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("password_reset_otp_hmac = ?", hmac).
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) IncrementPasswordResetAttempts(
+	ctx context.Context,
+	userId string,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("password_reset_otp_attempts = password_reset_otp_attempts + 1").
+		Set("updated_at = now()").
+		Where("id = ?", userId).
+		Exec(ctx)
+
+	return err
+}
+
+func (r *userRepo) StorePasswordResetTokenKey(
+	ctx context.Context,
+	userId string,
+	passwordResetTokenPublicKey []byte,
+) error {
+	_, err := r.db.NewUpdate().
+		Model((*models.User)(nil)).
+		Set("password_reset_token_public_key = ?", passwordResetTokenPublicKey).
+		Set("password_reset_otp_hmac = null").
+		Set("password_reset_expires_at = null").
+		Set("password_reset_otp_attempts = 0").
 		Set("updated_at = now()").
 		Where("id = ?", userId).
 		Exec(ctx)

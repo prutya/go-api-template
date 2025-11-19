@@ -4,29 +4,27 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
 	"prutya/go-api-template/internal/config"
-	"prutya/go-api-template/internal/handlers/account/account_utils"
 	"prutya/go-api-template/internal/handlers/utils"
 	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
-type VerifyEmailRequest struct {
+type VerifyPasswordResetOTPRequest struct {
 	Email string `json:"email" validate:"required,gte=3,lte=512,email"`
 	OTP   string `json:"otp" validate:"required,len=6,numeric"`
 }
 
-type VerifyEmailResponse struct {
-	AccessToken string `json:"accessToken"`
+type VerifyPasswordResetOTPResponse struct {
+	PasswordResetToken string `json:"passwordResetToken"`
 }
 
-func NewVerifyEmailHandler(
+func NewVerifyPasswordResetOTPHandler(
 	config *config.Config,
 	authenticationService authentication_service.AuthenticationService,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqBody := &VerifyEmailRequest{}
+		reqBody := &VerifyPasswordResetOTPRequest{}
 
 		if err := json.NewDecoder(r.Body).Decode(reqBody); err != nil {
 			utils.RenderInvalidJsonError(w, r)
@@ -38,23 +36,20 @@ func NewVerifyEmailHandler(
 			return
 		}
 
-		// Verify email
-		loginResult, err := authenticationService.VerifyEmail(
+		passwordResetToken, err := authenticationService.VerifyPasswordResetOTP(
 			r.Context(),
 			reqBody.Email,
 			reqBody.OTP,
-			r.UserAgent(),
-			r.RemoteAddr,
 		)
 		if err != nil {
-			logger.MustWarnContext(r.Context(), "Email verification failed", "error", err.Error())
+			logger.MustWarnContext(r.Context(), "Password reset OTP verification failed", "error", err.Error())
 
 			// Prevent user enumeration by handling errors and returning
 			// 422 invalid_otp
 			if errors.Is(err, authentication_service.ErrUserNotFound) ||
 				errors.Is(err, authentication_service.ErrTooManyOTPAttempts) ||
-				errors.Is(err, authentication_service.ErrEmailVerificationNotRequested) ||
-				errors.Is(err, authentication_service.ErrEmailVerificationExpired) ||
+				errors.Is(err, authentication_service.ErrPasswordResetNotRequested) ||
+				errors.Is(err, authentication_service.ErrPasswordResetExpired) ||
 				errors.Is(err, authentication_service.ErrInvalidOTP) {
 
 				displayError := authentication_service.ErrInvalidOTP
@@ -63,21 +58,12 @@ func NewVerifyEmailHandler(
 				return
 			}
 
-			if errors.Is(err, authentication_service.ErrEmailAlreadyVerified) {
-				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
-				return
-			}
-
 			utils.RenderError(w, r, err)
 			return
 		}
 
-		// Set the refresh token cookie
-		account_utils.SetRefreshTokenCookie(config, w, loginResult.RefreshToken, loginResult.RefreshTokenExpiresAt)
-
-		// Render the response
-		utils.RenderJson(w, r, &RefreshSessionResponse{
-			AccessToken: loginResult.AccessToken,
+		utils.RenderJson(w, r, &VerifyPasswordResetOTPResponse{
+			PasswordResetToken: passwordResetToken,
 		}, http.StatusOK, nil)
 	}
 }

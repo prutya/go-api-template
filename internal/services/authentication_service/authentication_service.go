@@ -18,6 +18,7 @@ var ErrUserRecordLocked = errors.New("user record is locked")
 var ErrEmailAlreadyVerified = errors.New("email already verified")
 var ErrEmailVerificationCooldown = errors.New("email verification cooldown")
 var ErrEmailVerificationExpired = errors.New("email verification expired")
+var ErrEmailVerificationNotRequested = errors.New("email verification not requested")
 var ErrTooManyOTPAttempts = errors.New("too many OTP attempts")
 var ErrInvalidOTP = errors.New("invalid OTP")
 var ErrUserAlreadyExists = errors.New("user already exists")
@@ -25,14 +26,19 @@ var ErrUserNotFound = errors.New("user not found")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrInvalidAccessTokenClaims = errors.New("invalid access token claims")
 var ErrAccessTokenNotFound = errors.New("access token not found")
-var ErrInvalidAccessToken = errors.New("invalid token")
+var ErrInvalidAccessToken = errors.New("invalid access token")
 var ErrInvalidRefreshTokenClaims = errors.New("invalid refresh token claims")
 var ErrRefreshTokenNotFound = errors.New("refresh token not found")
-var ErrRefreshTokenInvalid = errors.New("refresh token invalid")
+var ErrInvalidRefreshToken = errors.New("refresh token invalid")
 var ErrRefreshTokenRevoked = errors.New("refresh token revoked")
 var ErrSessionNotFound = errors.New("session not found")
 var ErrSessionAlreadyTerminated = errors.New("session already terminated")
 var ErrSessionExpired = errors.New("session expired")
+var ErrPasswordResetCooldown = errors.New("password reset cooldown")
+var ErrPasswordResetExpired = errors.New("password reset expired")
+var ErrPasswordResetNotRequested = errors.New("password reset not requested")
+var ErrInvalidPasswordResetTokenClaims = errors.New("invalid password reset token claims")
+var ErrInvalidPasswordResetToken = errors.New("invalid password reset token")
 
 type RefreshTokenClaims struct {
 	jwt.RegisteredClaims
@@ -46,6 +52,7 @@ type AccessTokenClaims struct {
 
 type PasswordResetTokenClaims struct {
 	jwt.RegisteredClaims
+	UserID string `json:"userId"`
 }
 
 type AuthenticationService interface {
@@ -81,7 +88,14 @@ type AuthenticationService interface {
 	) error
 	RequestPasswordReset(ctx context.Context, email string) error
 	SendPasswordResetEmail(ctx context.Context, userID string) error
-	ResetPassword(ctx context.Context, passwordResetToken string, newPassword string) error
+	VerifyPasswordResetOTP(ctx context.Context, email string, otp string) (string, error)
+	ResetPassword(
+		ctx context.Context,
+		passwordResetToken string,
+		newPassword string,
+		userAgent string,
+		ipAddress string,
+	) (*CreateTokensResult, error)
 	DeleteAccount(ctx context.Context, accessTokenClaims *AccessTokenClaims, password string) error
 	GetActiveSessionsForUser(
 		ctx context.Context,

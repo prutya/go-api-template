@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"prutya/go-api-template/internal/config"
+	"prutya/go-api-template/internal/handlers/account/account_utils"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -14,6 +17,7 @@ type ResetPasswordRequest struct {
 }
 
 func NewResetPasswordHandler(
+	config *config.Config,
 	authenticationService authentication_service.AuthenticationService,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -29,11 +33,22 @@ func NewResetPasswordHandler(
 			return
 		}
 
-		if err := authenticationService.ResetPassword(r.Context(), reqBody.Token, reqBody.NewPassword); err != nil {
-			if errors.Is(err, authentication_service.ErrInvalidResetPasswordTokenClaims) ||
-				errors.Is(err, authentication_service.ErrResetPasswordTokenNotFound) ||
-				errors.Is(err, authentication_service.ErrResetPasswordTokenInvalid) {
-				utils.RenderError(w, r, utils.ErrUnauthorized)
+		resetResult, err := authenticationService.ResetPassword(
+			r.Context(),
+			reqBody.Token,
+			reqBody.NewPassword,
+			r.UserAgent(),
+			r.RemoteAddr,
+		)
+		if err != nil {
+			logger.MustWarnContext(r.Context(), "Password reset failed", "error", err.Error())
+
+			// Prevent user enumeration by handling errors and returning
+			// 422 invalid_token
+			if errors.Is(err, authentication_service.ErrInvalidPasswordResetToken) {
+				displayError := authentication_service.ErrInvalidPasswordResetToken
+
+				utils.RenderError(w, r, utils.NewServerError(displayError.Error(), http.StatusUnprocessableEntity))
 				return
 			}
 
@@ -41,6 +56,12 @@ func NewResetPasswordHandler(
 			return
 		}
 
-		utils.RenderNoContent(w, r, nil)
+		// Set the refresh token cookie
+		account_utils.SetRefreshTokenCookie(config, w, resetResult.RefreshToken, resetResult.RefreshTokenExpiresAt)
+
+		// Render the response
+		utils.RenderJson(w, r, &RefreshSessionResponse{
+			AccessToken: resetResult.AccessToken,
+		}, http.StatusOK, nil)
 	}
 }

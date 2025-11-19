@@ -8,6 +8,7 @@ import (
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/handlers/account/account_utils"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -47,6 +48,8 @@ func NewLoginHandler(
 			r.RemoteAddr,
 		)
 		if err != nil {
+			logger.MustWarnContext(r.Context(), "Login failed", "error", err.Error())
+
 			if errors.Is(err, authentication_service.ErrInvalidCredentials) {
 				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
 				return

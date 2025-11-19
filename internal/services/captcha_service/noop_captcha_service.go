@@ -8,7 +8,7 @@ import (
 type noopCaptchaService struct{}
 
 func newNoopCaptchaService() CaptchaService {
-	slog.Warn("Captcha verification is disabled, always returning true")
+	slog.Warn("Captcha verification is disabled. All verification attempts will succeed.")
 
 	return &noopCaptchaService{}
 }

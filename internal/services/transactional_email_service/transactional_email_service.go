@@ -75,7 +75,7 @@ func (s *transactionalEmailService) SendEmail(
 
 	emailSendAttemptRepo := s.repoFactory.NewEmailSendAttemptRepo(s.db)
 
-	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now()); err != nil {
+	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now().UTC()); err != nil {
 		return err
 	}
 

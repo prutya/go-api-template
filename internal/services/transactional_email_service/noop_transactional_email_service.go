@@ -22,7 +22,7 @@ func newNoopTransactionalEmailService(
 	db bun.IDB,
 	repoFactory repo.RepoFactory,
 ) (TransactionalEmailService, error) {
-	slog.Warn("Transactional emails are disabled. Delivery is faked")
+	slog.Warn("Transactional emails delivery is disabled. Email text versions will be printed to stdout.")
 
 	return &noopTransactionalEmailService{
 		dailyGlobalLimit: dailyGlobalLimit,
@@ -43,7 +43,7 @@ func (s *noopTransactionalEmailService) SendEmail(
 
 	emailSendAttemptRepo := s.repoFactory.NewEmailSendAttemptRepo(s.db)
 
-	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now()); err != nil {
+	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now().UTC()); err != nil {
 		return err
 	}
 

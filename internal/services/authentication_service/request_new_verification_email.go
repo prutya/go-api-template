@@ -13,11 +13,6 @@ import (
 func (s *authenticationService) RequestNewVerificationEmail(ctx context.Context, email string) error {
 	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
-	// Check if the email domain is allowed
-	if !s.isEmailDomainAllowed(email) {
-		return ErrEmailDomainNotAllowed
-	}
-
 	var userID string
 
 	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {

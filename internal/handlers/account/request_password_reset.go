@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -31,9 +32,14 @@ func NewRequestPasswordResetHandler(
 
 		// Request password reset
 		if err := authenticationService.RequestPasswordReset(r.Context(), reqBody.Email); err != nil {
+			logger.MustWarnContext(r.Context(), "Password reset request failed", "error", err.Error())
+
 			// We don't want to leak information about whether the email is already
 			// registered, so we always return a 204 No Content response.
-			if errors.Is(err, authentication_service.ErrUserNotFound) {
+			if errors.Is(err, authentication_service.ErrUserRecordLocked) ||
+				errors.Is(err, authentication_service.ErrUserNotFound) ||
+				errors.Is(err, authentication_service.ErrPasswordResetCooldown) {
+
 				utils.RenderNoContent(w, r, nil)
 				return
 			}

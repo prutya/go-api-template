@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict sjxadLwv5gtyC9MV43dxqbW7LgMc9BCbNipwuA9242SNsglalZO1VUo2lsn411k
+\restrict bZ2M5lHp9dd3edFohIe91vWZdYXOxaBnRjhYF12a6mEp2wSrWRDZv1NNQeBTpig
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -143,6 +143,7 @@ CREATE TABLE public.users (
     password_reset_otp_attempts integer DEFAULT 0 NOT NULL,
     password_reset_cooldown_resets_at timestamp with time zone,
     password_reset_last_requested_at timestamp with time zone,
+    password_reset_token_public_key bytea,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -281,13 +282,13 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sjxadLwv5gtyC9MV43dxqbW7LgMc9BCbNipwuA9242SNsglalZO1VUo2lsn411k
+\unrestrict bZ2M5lHp9dd3edFohIe91vWZdYXOxaBnRjhYF12a6mEp2wSrWRDZv1NNQeBTpig
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict LxeU5nhxh10ong6AG6Uzv3tlpldsMSc5nNTYQOAah96Dsem8Vbj9qh5aSLkKfPn
+\restrict UvhZXksR2calZoKCIMG9AEOB9amL1vC6c6YbGESotKKSsTNiellTld422ntFH8h
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -316,4 +317,4 @@ INSERT INTO public.schema_migrations VALUES ('20251116174456');
 -- PostgreSQL database dump complete
 --
 
-\unrestrict LxeU5nhxh10ong6AG6Uzv3tlpldsMSc5nNTYQOAah96Dsem8Vbj9qh5aSLkKfPn
+\unrestrict UvhZXksR2calZoKCIMG9AEOB9amL1vC6c6YbGESotKKSsTNiellTld422ntFH8h
