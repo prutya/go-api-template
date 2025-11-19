@@ -3,7 +3,6 @@ package authentication_service
 import (
 	"bytes"
 	"context"
-	"errors"
 	text_template "text/template"
 	"time"
 )
@@ -38,14 +37,22 @@ var PasswordResetEmailTemplateHTML = text_template.Must(text_template.New("passw
 	`,
 ))
 
-var ErrPasswordResetRateLimited = errors.New("password reset rate limited")
-
 func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, userID string) error {
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 
 	user, err := findUserByID(ctx, userRepo, userID)
 	if err != nil {
 		return err
+	}
+
+	// An old failed job is retrying but the state has already changed
+	if !user.PasswordResetExpiresAt.Valid {
+		return ErrPasswordResetNotRequested
+	}
+
+	// An old failed job is retrying but the state has already changed
+	if user.PasswordResetExpiresAt.Time.Before(time.Now().UTC()) {
+		return ErrPasswordResetExpired
 	}
 
 	otp, err := generateOtp()

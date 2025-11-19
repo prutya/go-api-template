@@ -3,7 +3,6 @@ package authentication_service
 import (
 	"bytes"
 	"context"
-	"errors"
 	html_template "html/template"
 	text_template "text/template"
 	"time"
@@ -39,8 +38,6 @@ var VerificationEmailTemplateHTML = html_template.Must(html_template.New("verifi
 	`,
 ))
 
-var ErrEmailVerificationRateLimited = errors.New("email verification rate limited")
-
 func (s *authenticationService) SendVerificationEmail(ctx context.Context, userID string) error {
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 
@@ -49,7 +46,20 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 		return err
 	}
 
-	// TODO: If email verification has already expired, throw an error
+	// An old failed job is retrying but the state has already changed
+	if user.EmailVerifiedAt.Valid {
+		return ErrEmailAlreadyVerified
+	}
+
+	// An old failed job is retrying but the state has already changed
+	if !user.EmailVerificationExpiresAt.Valid {
+		return ErrEmailVerificationNotRequested
+	}
+
+	// An old failed job is retrying but the state has already changed
+	if user.EmailVerificationExpiresAt.Time.Before(time.Now().UTC()) {
+		return ErrEmailVerificationExpired
+	}
 
 	otp, err := generateOtp()
 	if err != nil {

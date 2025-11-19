@@ -3,7 +3,6 @@ package tasks_server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	"github.com/hibiken/asynq"
 
@@ -30,16 +29,14 @@ func (h *sendPasswordResetEmailTaskHandler) ProcessTask(ctx context.Context, tas
 	}
 
 	if err := h.authenticationService.SendPasswordResetEmail(ctx, payload.UserID); err != nil {
-		if errors.Is(err, authentication_service.ErrUserNotFound) {
-			return asynq.RevokeTask
-		}
-
-		if errors.Is(err, authentication_service.ErrPasswordResetRateLimited) {
-			return asynq.RevokeTask
-		}
-
-		if errors.Is(err, transactional_email_service.ErrGlobalLimitReached) {
-			return asynq.SkipRetry
+		if skipped, wrappedErr := skipRetry(
+			err,
+			authentication_service.ErrUserNotFound,
+			authentication_service.ErrPasswordResetNotRequested,
+			authentication_service.ErrPasswordResetExpired,
+			transactional_email_service.ErrGlobalLimitReached,
+		); skipped {
+			return wrappedErr
 		}
 
 		return err

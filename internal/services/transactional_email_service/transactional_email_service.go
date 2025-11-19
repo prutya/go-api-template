@@ -44,6 +44,10 @@ func NewTransactionalEmailService(
 		return newNoopTransactionalEmailService(ctx, dailyGlobalLimit, db, repoFactory)
 	}
 
+	if dailyGlobalLimit <= 0 {
+		logger.MustWarnContext(ctx, "Daily global email limit is <= 0, no emails will be sent")
+	}
+
 	scwClient, err := scw.NewClient(
 		scw.WithAuth(scalewayAccessKeyID, scalewaySecretKey),
 		scw.WithDefaultRegion(scalewayRegion),

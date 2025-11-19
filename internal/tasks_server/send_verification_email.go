@@ -3,7 +3,6 @@ package tasks_server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"prutya/go-api-template/internal/services/authentication_service"
 	"prutya/go-api-template/internal/services/transactional_email_service"
 	"prutya/go-api-template/internal/tasks"
@@ -29,8 +28,14 @@ func (h *sendVerificationEmailTaskHandler) ProcessTask(ctx context.Context, task
 	}
 
 	if err := h.authenticationService.SendVerificationEmail(ctx, payload.UserID); err != nil {
-		if errors.Is(err, transactional_email_service.ErrGlobalLimitReached) {
-			return asynq.SkipRetry
+		if skipped, wrappedErr := skipRetry(
+			err,
+			authentication_service.ErrUserNotFound,
+			authentication_service.ErrEmailAlreadyVerified,
+			authentication_service.ErrEmailVerificationExpired,
+			transactional_email_service.ErrGlobalLimitReached,
+		); skipped {
+			return wrappedErr
 		}
 
 		return err
