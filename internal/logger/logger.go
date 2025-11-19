@@ -39,7 +39,34 @@ func New(levelStr string, format string) (*Logger, error) {
 	slogLogger := slog.New(baseHandler)
 	slog.SetDefault(slogLogger)
 
-	return &Logger{slog: slogLogger}, nil
+	logger := &Logger{slog: slogLogger}
+
+	if !Debug && level == slog.LevelDebug {
+		logger.Warn("Debug logging was not enabled at compile time. The debug messages will not be printed.")
+	}
+
+	return logger, nil
+}
+
+func (l *Logger) Debug(msg string, args ...any) {
+	debugContext(l, context.Background(), msg, args...)
+}
+
+func (l *Logger) Info(msg string, args ...any) {
+	l.InfoContext(context.Background(), msg, args...)
+}
+
+func (l *Logger) Warn(msg string, args ...any) {
+	l.WarnContext(context.Background(), msg, args...)
+}
+
+func (l *Logger) Error(msg string, args ...any) {
+	l.ErrorContext(context.Background(), msg, args...)
+}
+
+func (l *Logger) Fatal(msg string, args ...any) {
+	l.ErrorContext(context.Background(), msg, args...)
+	os.Exit(1)
 }
 
 func (l *Logger) DebugContext(ctx context.Context, msg string, args ...any) {
