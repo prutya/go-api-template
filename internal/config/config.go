@@ -15,6 +15,7 @@ type Config struct {
 	LogLevel             string        `mapstructure:"LOG_LEVEL"`
 	LogFormat            string        `mapstructure:"LOG_FORMAT"`
 	LogTimeFormat        string        `mapstructure:"LOG_TIME_FORMAT"`
+	LogShowCallerInDebug bool          `mapstructure:"LOG_SHOW_CALLER_IN_DEBUG"`
 	RequestTimeout       time.Duration `mapstructure:"REQUEST_TIMEOUT"`
 	CorsAllowedOrigins   []string      `mapstructure:"CORS_ALLOWED_ORIGINS"`
 	CorsAllowedMethods   []string      `mapstructure:"CORS_ALLOWED_METHODS"`
@@ -90,6 +91,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("log_level", "info")
 	viper.SetDefault("log_format", "json")
 	viper.SetDefault("log_time_format", "iso8601")
+	viper.SetDefault("log_show_caller_in_debug", true)
 	viper.SetDefault("request_timeout", 60*time.Second)
 	// No default for CORS Origins
 	viper.SetDefault("cors_allowed_methods", []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
@@ -134,6 +136,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_argon2_parallelism", uint8(2))
 	viper.SetDefault("authentication_argon2_salt_length", uint32(16))
 	viper.SetDefault("authentication_argon2_key_length", uint32(32))
+	// No default for AuthenticationOtpHmacSecretBase64
 	// AuthenticationEmailBlocklist is loaded from a file and parsed later
 
 	// Captcha

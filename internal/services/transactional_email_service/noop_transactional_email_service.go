@@ -2,7 +2,6 @@ package transactional_email_service
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -18,11 +17,12 @@ type noopTransactionalEmailService struct {
 }
 
 func newNoopTransactionalEmailService(
+	ctx context.Context,
 	dailyGlobalLimit int,
 	db bun.IDB,
 	repoFactory repo.RepoFactory,
 ) (TransactionalEmailService, error) {
-	slog.Warn("Transactional emails delivery is disabled. Email text versions will be printed to stdout.")
+	logger.MustWarnContext(ctx, "Transactional emails delivery is disabled. Email text versions will be printed to stdout.")
 
 	return &noopTransactionalEmailService{
 		dailyGlobalLimit: dailyGlobalLimit,

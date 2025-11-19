@@ -21,12 +21,13 @@ type captchaService struct {
 }
 
 func NewCaptchaService(
+	ctx context.Context,
 	enabled bool,
 	baseURL string,
 	secretKey string,
 ) CaptchaService {
 	if !enabled {
-		return newNoopCaptchaService()
+		return newNoopCaptchaService(ctx)
 	}
 
 	// TODO: Make configurable
@@ -108,12 +109,12 @@ func (s *captchaService) Verify(ctx context.Context, captchaResponse string, ip 
 	}
 
 	if !responseBody.Success {
-		logger.WarnContext(ctx, "captcha validation failed", "error_codes", responseBody.ErrorCodes)
+		logger.WarnContext(ctx, "captcha verification failed", "error_codes", responseBody.ErrorCodes)
 
 		return false, nil
 	}
 
-	logger.DebugContext(ctx, "captcha validation succeeded")
+	logger.DebugContext(ctx, "captcha verification succeeded")
 
 	return true, nil
 }

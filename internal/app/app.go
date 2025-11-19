@@ -36,7 +36,7 @@ type App struct {
 	UserService               user_service.UserService
 }
 
-func InitializeEssentials() *AppEssentials {
+func NewAppEssentials() *AppEssentials {
 	// Config
 	cfg, err := config.Load()
 	if err != nil {
@@ -44,7 +44,7 @@ func InitializeEssentials() *AppEssentials {
 	}
 
 	// Logger
-	logger, err := loggerpkg.New(cfg.LogLevel, cfg.LogFormat)
+	logger, err := loggerpkg.New(cfg.LogLevel, cfg.LogFormat, cfg.LogShowCallerInDebug)
 	if err != nil {
 		panic(err)
 	}
@@ -60,8 +60,8 @@ func InitializeEssentials() *AppEssentials {
 	}
 }
 
-func Initialize() *App {
-	appEssentials := InitializeEssentials()
+func NewApp() *App {
+	appEssentials := NewAppEssentials()
 	cfg, logger, ctx := appEssentials.Config, appEssentials.Logger, appEssentials.Context
 
 	// Database
@@ -96,6 +96,7 @@ func Initialize() *App {
 
 	// Services
 	transactionalEmailService, err := transactional_email_service.NewTransactionalEmailService(
+		ctx,
 		cfg.TransactionalEmailsEnabled,
 		cfg.TransactionalEmailsDailyGlobalLimit,
 		cfg.TransactionalEmailsSenderEmail,
@@ -112,6 +113,7 @@ func Initialize() *App {
 	}
 
 	captchaService := captcha_service.NewCaptchaService(
+		ctx,
 		cfg.CaptchaEnabled,
 		cfg.CaptchaTurnstileBaseURL,
 		cfg.CaptchaTurnstileSecretKey,

@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	app := app.Initialize()
+	app := app.NewApp()
 	ctx, cfg, logger := app.Essentials.Context, app.Essentials.Config, app.Essentials.Logger
 
 	// Tasks server

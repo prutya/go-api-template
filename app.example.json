@@ -2,6 +2,7 @@
   "log_level": "debug",
   "log_format": "json",
   "log_time_format": "iso8601",
+  "log_show_caller_in_debug": true,
   "request_timeout": "60s",
   "cors_allowed_origins": ["http://localhost:3210"],
   "cors_allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

@@ -28,6 +28,7 @@ type transactionalEmailService struct {
 }
 
 func NewTransactionalEmailService(
+	ctx context.Context,
 	enabled bool,
 	dailyGlobalLimit int,
 	senderEmail string,
@@ -40,7 +41,7 @@ func NewTransactionalEmailService(
 	repoFactory repo.RepoFactory,
 ) (TransactionalEmailService, error) {
 	if !enabled {
-		return newNoopTransactionalEmailService(dailyGlobalLimit, db, repoFactory)
+		return newNoopTransactionalEmailService(ctx, dailyGlobalLimit, db, repoFactory)
 	}
 
 	scwClient, err := scw.NewClient(

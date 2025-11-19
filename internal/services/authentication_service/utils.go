@@ -73,7 +73,7 @@ func withMinimumAllowedFunctionDuration(ctx context.Context, minimumAllowedFunct
 		duration := time.Since(startTime)
 		timeLeft := minimumAllowedFunctionDuration - duration
 
-		logger.MustDebugContext(ctx, "Function has returned", "real_execution_time", duration)
+		logger.MustDebugContext(ctx, "Function has returned", "real_duration", duration)
 
 		if timeLeft > 0 {
 			time.Sleep(timeLeft)
