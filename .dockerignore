@@ -1,9 +1,13 @@
-.github
 .git
+.github
+.vscode
+tmp
 .dockerignore
 .gitignore
 .golangci.yml
 app.example.json
 app.json
+docker-compose.yml
 Dockerfile
 README.md
+setup-dev.sh

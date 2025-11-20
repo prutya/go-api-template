@@ -18,6 +18,46 @@ x-shared-configuration:
       REDIS_PASSWORD: app_redis_password
 
 services:
+  run_production:
+    build:
+      target: production
+      context: "."
+    volumes:
+      - "${GO_API_TEMPLATE_ROOT:-.}/app.json:/app/app.json"
+    ports:
+      - 3333:3333
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  run_production_worker:
+    build:
+      target: production
+      context: "."
+    volumes:
+      - "${GO_API_TEMPLATE_ROOT:-.}/app.json:/app/app.json"
+    command: ["/app/worker"]
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  run_production_scheduler:
+    build:
+      target: production
+      context: "."
+    volumes:
+      - "${GO_API_TEMPLATE_ROOT:-.}/app.json:/app/app.json"
+    command: ["/app/scheduler"]
+    networks:
+      - app_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   dbmate:
     <<: [*dbmate]
     environment:

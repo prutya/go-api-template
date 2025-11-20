@@ -1,6 +1,6 @@
 ##### Base #####
 
-FROM golang:1.25.1-trixie AS base
+FROM golang:1.25.4-trixie AS base
 
 
 
@@ -60,11 +60,7 @@ RUN echo "app:x:1000:1000:App:/:" > /etc_passwd
 
 ##### Final production image ####
 
-FROM debian:bookworm-20250811-slim AS production
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl && \
-    rm -rf /var/lib/apt/lists/*
+FROM gcr.io/distroless/static-debian12:nonroot AS production
 
 WORKDIR /app
 
@@ -72,14 +68,6 @@ COPY --from=build_production /app/server .
 COPY --from=build_production /app/worker .
 COPY --from=build_production /app/scheduler .
 COPY ./config ./config
-
-# Prepare the config file
-RUN echo "{}" > app.json
-
-# Copy the non-root user
-COPY --from=build_production /etc_passwd /etc/passwd
-
-USER app
 
 CMD ["/app/server"]
 

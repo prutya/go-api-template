@@ -43,6 +43,8 @@ type Config struct {
 	AuthenticationRefreshTokenCookieName       string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_NAME"`
 	AuthenticationRefreshTokenCookieDomain     string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_DOMAIN"`
 	AuthenticationRefreshTokenCookiePath       string        `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_PATH"`
+	AuthenticationRefreshTokenCookieSecure     bool          `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_SECURE"`
+	AuthenticationRefreshTokenCookieHttpOnly   bool          `mapstructure:"AUTHENTICATION_REFRESH_TOKEN_COOKIE_HTTP_ONLY"`
 	AuthenticationAccessTokenTTL               time.Duration `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_TTL"`
 	AuthenticationAccessTokenSecretLength      uint32        `mapstructure:"AUTHENTICATION_ACCESS_TOKEN_SECRET_LENGTH"`
 	AuthenticationEmailVerificationCooldown    time.Duration `mapstructure:"AUTHENTICATION_EMAIL_VERIFICATION_COOLDOWN"`
@@ -122,6 +124,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_refresh_token_cookie_name", "refresh_token")
 	viper.SetDefault("authentication_refresh_token_cookie_domain", "")
 	viper.SetDefault("authentication_refresh_token_cookie_path", "/account/refresh-session")
+	viper.SetDefault("authentication_refresh_token_cookie_secure", true)
 	viper.SetDefault("authentication_access_token_ttl", 5*time.Minute)
 	viper.SetDefault("authentication_access_token_secret_length", 32)
 	viper.SetDefault("authentication_email_verification_cooldown", 1*time.Minute)
@@ -159,7 +162,9 @@ func Load() (*Config, error) {
 	viper.SetDefault("tasks_redis_password", "")
 
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, err
+		}
 	}
 
 	config := &Config{}

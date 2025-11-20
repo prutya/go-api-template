@@ -30,6 +30,8 @@
   "authentication_refresh_token_cookie_name": "refresh_token",
   "authentication_refresh_token_cookie_domain": "",
   "authentication_refresh_token_cookie_path": "/account/refresh-session",
+  "authentication_refresh_token_cookie_secure": true,
+  "authentication_refresh_token_cookie_http_only": true,
   "authentication_access_token_ttl": "5m",
   "authentication_access_token_secret_length": 32,
   "authentication_email_verification_cooldown": "1m",
