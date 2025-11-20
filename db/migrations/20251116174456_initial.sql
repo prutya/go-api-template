@@ -7,14 +7,14 @@ create table users (
 
   -- Email verification
   email_verified_at timestamptz,
-  email_verification_otp_hmac bytea,
+  email_verification_otp_digest text,
   email_verification_expires_at timestamptz,
   email_verification_otp_attempts int not null default 0,
   email_verification_cooldown_resets_at timestamptz,
   email_verification_last_requested_at timestamptz,
 
   -- Password reset
-  password_reset_otp_hmac bytea,
+  password_reset_otp_digest text,
   password_reset_expires_at timestamptz,
   password_reset_otp_attempts int not null default 0,
   password_reset_cooldown_resets_at timestamptz,

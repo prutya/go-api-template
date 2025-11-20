@@ -52,13 +52,12 @@ func (s *authenticationService) VerifyEmail(
 		return nil, ErrEmailVerificationExpired
 	}
 
-	// Verify OTP
-	hmacOk, err := checkHmac([]byte(otp), s.config.AuthenticationOtpHmacSecret, user.EmailVerificationOtpHmac)
+	otpOk, err := argon2ComparePlaintextAndHash(otp, user.EmailVerificationOtpDigest)
 	if err != nil {
 		return nil, err
 	}
 
-	if !hmacOk {
+	if !otpOk {
 		logger.DebugContext(ctx, ErrInvalidOTP.Error(), "user_id", user.ID, "otp", otp)
 
 		if err := userRepo.IncrementEmailVerificationAttempts(ctx, user.ID); err != nil {

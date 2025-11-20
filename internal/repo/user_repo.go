@@ -33,14 +33,14 @@ type UserRepo interface {
 	) error
 	IncrementEmailVerificationAttempts(ctx context.Context, userId string) error
 	CompleteEmailVerification(ctx context.Context, userId string) error
-	UpdateEmailVerificationOtpHmac(ctx context.Context, userId string, hmac []byte) error
+	UpdateEmailVerificationOtpDigest(ctx context.Context, userId string, digest string) error
 	StartPasswordReset(
 		ctx context.Context,
 		userId string,
 		passwordResetExpiresAt time.Time,
 		passwordResetCooldownResetsAt time.Time,
 	) error
-	UpdatePasswordResetOtpHmac(ctx context.Context, userId string, hmac []byte) error
+	UpdatePasswordResetOtpDigest(ctx context.Context, userId string, digest string) error
 	IncrementPasswordResetAttempts(ctx context.Context, userId string) error
 	StorePasswordResetTokenKey(
 		ctx context.Context,
@@ -163,7 +163,7 @@ func (r *userRepo) StartEmailVerification(
 ) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
-		Set("email_verification_otp_hmac = null").
+		Set("email_verification_otp_digest = null").
 		Set("email_verification_expires_at = ?", emailVerificationExpiresAt).
 		Set("email_verification_otp_attempts = 0").
 		Set("email_verification_cooldown_resets_at = ?", emailVerificationCooldownResetsAt).
@@ -196,7 +196,7 @@ func (r *userRepo) CompleteEmailVerification(
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
 		Set("email_verified_at = now()").
-		Set("email_verification_otp_hmac = null").
+		Set("email_verification_otp_digest = null").
 		Set("email_verification_expires_at = null").
 		Set("email_verification_otp_attempts = 0").
 		Set("updated_at = now()").
@@ -206,14 +206,14 @@ func (r *userRepo) CompleteEmailVerification(
 	return err
 }
 
-func (r *userRepo) UpdateEmailVerificationOtpHmac(
+func (r *userRepo) UpdateEmailVerificationOtpDigest(
 	ctx context.Context,
 	userId string,
-	hmac []byte,
+	digest string,
 ) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
-		Set("email_verification_otp_hmac = ?", hmac).
+		Set("email_verification_otp_digest = ?", digest).
 		Set("updated_at = now()").
 		Where("id = ?", userId).
 		Exec(ctx)
@@ -229,7 +229,7 @@ func (r *userRepo) StartPasswordReset(
 ) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
-		Set("password_reset_otp_hmac = null").
+		Set("password_reset_otp_digest = null").
 		Set("password_reset_expires_at = ?", passwordResetExpiresAt).
 		Set("password_reset_otp_attempts = 0").
 		Set("password_reset_cooldown_resets_at = ?", passwordResetCooldownResetsAt).
@@ -241,14 +241,14 @@ func (r *userRepo) StartPasswordReset(
 	return err
 }
 
-func (r *userRepo) UpdatePasswordResetOtpHmac(
+func (r *userRepo) UpdatePasswordResetOtpDigest(
 	ctx context.Context,
 	userId string,
-	hmac []byte,
+	digest string,
 ) error {
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
-		Set("password_reset_otp_hmac = ?", hmac).
+		Set("password_reset_otp_digest = ?", digest).
 		Set("updated_at = now()").
 		Where("id = ?", userId).
 		Exec(ctx)
@@ -278,7 +278,7 @@ func (r *userRepo) StorePasswordResetTokenKey(
 	_, err := r.db.NewUpdate().
 		Model((*models.User)(nil)).
 		Set("password_reset_token_public_key = ?", passwordResetTokenPublicKey).
-		Set("password_reset_otp_hmac = null").
+		Set("password_reset_otp_digest = null").
 		Set("password_reset_expires_at = null").
 		Set("password_reset_otp_attempts = 0").
 		Set("updated_at = now()").

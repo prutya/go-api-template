@@ -2,7 +2,6 @@ package config
 
 import (
 	"bufio"
-	"encoding/base64"
 	"os"
 	"strings"
 	"time"
@@ -54,13 +53,16 @@ type Config struct {
 	AuthenticationPasswordResetCodeTTL         time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_CODE_TTL"`
 	AuthenticationPasswordResetMaxAttempts     int           `mapstructure:"AUTHENTICATION_PASSWORD_RESET_MAX_ATTEMPTS"`
 	AuthenticationPasswordResetTokenTTL        time.Duration `mapstructure:"AUTHENTICATION_PASSWORD_RESET_TOKEN_TTL"`
-	AuthenticationArgon2Memory                 uint32        `mapstructure:"AUTHENTICATION_ARGON2_MEMORY"`
-	AuthenticationArgon2Iterations             uint32        `mapstructure:"AUTHENTICATION_ARGON2_ITERATIONS"`
-	AuthenticationArgon2Parallelism            uint8         `mapstructure:"AUTHENTICATION_ARGON2_PARALLELISM"`
-	AuthenticationArgon2SaltLength             uint32        `mapstructure:"AUTHENTICATION_ARGON2_SALT_LENGTH"`
-	AuthenticationArgon2KeyLength              uint32        `mapstructure:"AUTHENTICATION_ARGON2_KEY_LENGTH"`
-	AuthenticationOtpHmacSecretBase64          string        `mapstructure:"AUTHENTICATION_OTP_HMAC_SECRET"`
-	AuthenticationOtpHmacSecret                []byte
+	AuthenticationPasswordArgon2Memory         uint32        `mapstructure:"AUTHENTICATION_PASSWORD_ARGON2_MEMORY"`
+	AuthenticationPasswordArgon2Iterations     uint32        `mapstructure:"AUTHENTICATION_PASSWORD_ARGON2_ITERATIONS"`
+	AuthenticationPasswordArgon2Parallelism    uint8         `mapstructure:"AUTHENTICATION_PASSWORD_ARGON2_PARALLELISM"`
+	AuthenticationPasswordArgon2SaltLength     uint32        `mapstructure:"AUTHENTICATION_PASSWORD_ARGON2_SALT_LENGTH"`
+	AuthenticationPasswordArgon2KeyLength      uint32        `mapstructure:"AUTHENTICATION_PASSWORD_ARGON2_KEY_LENGTH"`
+	AuthenticationOTPArgon2Memory              uint32        `mapstructure:"AUTHENTICATION_OTP_ARGON2_MEMORY"`
+	AuthenticationOTPArgon2Iterations          uint32        `mapstructure:"AUTHENTICATION_OTP_ARGON2_ITERATIONS"`
+	AuthenticationOTPArgon2Parallelism         uint8         `mapstructure:"AUTHENTICATION_OTP_ARGON2_PARALLELISM"`
+	AuthenticationOTPArgon2SaltLength          uint32        `mapstructure:"AUTHENTICATION_OTP_ARGON2_SALT_LENGTH"`
+	AuthenticationOTPArgon2KeyLength           uint32        `mapstructure:"AUTHENTICATION_OTP_ARGON2_KEY_LENGTH"`
 	AuthenticationEmailBlocklist               map[string]struct{}
 
 	CaptchaEnabled            bool   `mapstructure:"CAPTCHA_ENABLED"`
@@ -116,7 +118,6 @@ func Load() (*Config, error) {
 	viper.SetDefault("database_max_connection_idle_time", 5*time.Minute)
 
 	// Authentication
-	viper.SetDefault("authentication_bcrypt_cost", 12)
 	viper.SetDefault("authentication_timing_attack_delay", 500*time.Millisecond)
 	viper.SetDefault("authentication_refresh_token_ttl", 36*time.Hour)
 	viper.SetDefault("authentication_refresh_token_secret_length", 32)
@@ -134,12 +135,16 @@ func Load() (*Config, error) {
 	viper.SetDefault("authentication_password_reset_code_ttl", 15*time.Minute)
 	viper.SetDefault("authentication_password_reset_max_attempts", 5)
 	viper.SetDefault("authentication_password_reset_token_ttl", 15*time.Minute)
-	viper.SetDefault("authentication_argon2_memory", uint32(64*1024))
-	viper.SetDefault("authentication_argon2_iterations", uint32(3))
-	viper.SetDefault("authentication_argon2_parallelism", uint8(2))
-	viper.SetDefault("authentication_argon2_salt_length", uint32(16))
-	viper.SetDefault("authentication_argon2_key_length", uint32(32))
-	// No default for AuthenticationOtpHmacSecretBase64
+	viper.SetDefault("authentication_password_argon2_memory", uint32(64*1024))
+	viper.SetDefault("authentication_password_argon2_iterations", uint32(3))
+	viper.SetDefault("authentication_password_argon2_parallelism", uint8(2))
+	viper.SetDefault("authentication_password_argon2_salt_length", uint32(16))
+	viper.SetDefault("authentication_password_argon2_key_length", uint32(32))
+	viper.SetDefault("authentication_otp_argon2_memory", uint32(32*1024))
+	viper.SetDefault("authentication_otp_argon2_iterations", uint32(1))
+	viper.SetDefault("authentication_otp_argon2_parallelism", uint8(2))
+	viper.SetDefault("authentication_otp_argon2_salt_length", uint32(16))
+	viper.SetDefault("authentication_otp_argon2_key_length", uint32(16))
 	// AuthenticationEmailBlocklist is loaded from a file and parsed later
 
 	// Captcha
@@ -173,11 +178,6 @@ func Load() (*Config, error) {
 	}
 
 	config.TransactionalEmailsScalewayRegion = parseScalewayRegion(config.TransactionalEmailsScalewayRegionRaw)
-	decodedOtpHmacSecret, err := loadAuthenticationOtpHmacSecret(config.AuthenticationOtpHmacSecretBase64)
-	if err != nil {
-		return nil, err
-	}
-	config.AuthenticationOtpHmacSecret = decodedOtpHmacSecret
 	config.AuthenticationEmailBlocklist = loadAuthenticationEmailBlocklist()
 
 	return config, nil
@@ -191,10 +191,6 @@ func parseScalewayRegion(s string) scw.Region {
 	}
 
 	return region
-}
-
-func loadAuthenticationOtpHmacSecret(b64 string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(b64)
 }
 
 // See https://github.com/disposable-email-domains/disposable-email-domains

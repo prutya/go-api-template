@@ -140,10 +140,3 @@ Server, worker and scheduler binaries will be in the same image
 ```sh
 docker build . --tag go-api-template:latest
 ```
-
-## Configuration
-
-### Generating a new OTP HMAC secret
-```sh
-openssl rand -base64 32
-```

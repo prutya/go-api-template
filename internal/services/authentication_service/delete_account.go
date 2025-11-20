@@ -2,9 +2,6 @@ package authentication_service
 
 import (
 	"context"
-	"errors"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *authenticationService) DeleteAccount(
@@ -22,13 +19,14 @@ func (s *authenticationService) DeleteAccount(
 		return err
 	}
 
-	// Verify the password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password)); err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return ErrInvalidCredentials
-		}
-
+	// Check if the password is correct
+	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
+	if err != nil {
 		return err
+	}
+
+	if !passwordMatch {
+		return ErrInvalidCredentials
 	}
 
 	// Delete the user

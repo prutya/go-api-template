@@ -29,7 +29,7 @@ func (s *authenticationService) ChangePassword(
 	}
 
 	// Check if the password is correct
-	passwordMatch, err := argon2ComparePasswordAndHash(oldPassword, user.PasswordDigest)
+	passwordMatch, err := argon2ComparePlaintextAndHash(oldPassword, user.PasswordDigest)
 	if err != nil {
 		return err
 	}

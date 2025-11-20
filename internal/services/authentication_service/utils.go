@@ -2,9 +2,7 @@ package authentication_service
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
@@ -113,7 +111,7 @@ type argon2params struct {
 
 func (s *authenticationService) argon2GenerateHashFromPassword(password string) (string, error) {
 	// Generate a cryptographically secure random salt.
-	salt, err := generateRandomBytes(s.config.AuthenticationArgon2SaltLength)
+	salt, err := generateRandomBytes(s.config.AuthenticationPasswordArgon2SaltLength)
 	if err != nil {
 		return "", err
 	}
@@ -124,10 +122,10 @@ func (s *authenticationService) argon2GenerateHashFromPassword(password string) 
 	hash := argon2.IDKey(
 		[]byte(password),
 		salt,
-		s.config.AuthenticationArgon2Iterations,
-		s.config.AuthenticationArgon2Memory,
-		s.config.AuthenticationArgon2Parallelism,
-		s.config.AuthenticationArgon2KeyLength,
+		s.config.AuthenticationPasswordArgon2Iterations,
+		s.config.AuthenticationPasswordArgon2Memory,
+		s.config.AuthenticationPasswordArgon2Parallelism,
+		s.config.AuthenticationPasswordArgon2KeyLength,
 	)
 
 	// Base64 encode the salt and hashed password.
@@ -138,9 +136,9 @@ func (s *authenticationService) argon2GenerateHashFromPassword(password string) 
 	encodedHash := fmt.Sprintf(
 		"$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version,
-		s.config.AuthenticationArgon2Memory,
-		s.config.AuthenticationArgon2Iterations,
-		s.config.AuthenticationArgon2Parallelism,
+		s.config.AuthenticationPasswordArgon2Memory,
+		s.config.AuthenticationPasswordArgon2Iterations,
+		s.config.AuthenticationPasswordArgon2Parallelism,
 		b64Salt,
 		b64Hash,
 	)
@@ -148,18 +146,54 @@ func (s *authenticationService) argon2GenerateHashFromPassword(password string) 
 	return encodedHash, nil
 }
 
-func argon2ComparePasswordAndHash(password, encodedHash string) (match bool, err error) {
-	// Extract the parameters, salt and derived key from the encoded password
-	// hash.
+func (s *authenticationService) argon2GenerateHashFromOTP(otp string) (string, error) {
+	// Generate a cryptographically secure random salt.
+	salt, err := generateRandomBytes(s.config.AuthenticationOTPArgon2SaltLength)
+	if err != nil {
+		return "", err
+	}
+
+	// Pass the plaintext OTP, salt and parameters to the argon2.IDKey
+	// function. This will generate a hash of the OTP using the Argon2id
+	// variant.
+	hash := argon2.IDKey(
+		[]byte(otp),
+		salt,
+		s.config.AuthenticationOTPArgon2Iterations,
+		s.config.AuthenticationOTPArgon2Memory,
+		s.config.AuthenticationOTPArgon2Parallelism,
+		s.config.AuthenticationOTPArgon2KeyLength,
+	)
+
+	// Base64 encode the salt and hashed OTP.
+	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
+	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
+
+	// Return a string using the standard encoded hash representation.
+	encodedHash := fmt.Sprintf(
+		"$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
+		argon2.Version,
+		s.config.AuthenticationOTPArgon2Memory,
+		s.config.AuthenticationOTPArgon2Iterations,
+		s.config.AuthenticationOTPArgon2Parallelism,
+		b64Salt,
+		b64Hash,
+	)
+
+	return encodedHash, nil
+}
+
+func argon2ComparePlaintextAndHash(plaintext, encodedHash string) (match bool, err error) {
+	// Extract the parameters, salt and derived key from the encoded hash
 	p, salt, hash, err := argon2DecodeHash(encodedHash)
 	if err != nil {
 		return false, err
 	}
 
-	// Derive the key from the other password using the same parameters.
-	otherHash := argon2.IDKey([]byte(password), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
+	// Derive the key from the plaintext using the same parameters.
+	otherHash := argon2.IDKey([]byte(plaintext), salt, p.iterations, p.memory, p.parallelism, p.keyLength)
 
-	// Check that the contents of the hashed passwords are identical. Note
+	// Check that the contents of the hashed values are identical. Note
 	// that we are using the subtle.ConstantTimeCompare() function for this
 	// to help prevent timing attacks.
 	if subtle.ConstantTimeCompare(hash, otherHash) == 1 {
@@ -214,23 +248,4 @@ func generateOtp() (string, error) {
 
 	// Format with leading zeros to ensure 6 digits
 	return fmt.Sprintf("%06d", n), nil
-}
-
-func generateHmac(input []byte, secret []byte) ([]byte, error) {
-	h := hmac.New(sha256.New, secret)
-
-	if _, err := h.Write(input); err != nil {
-		return nil, err
-	}
-
-	return h.Sum(nil), nil
-}
-
-func checkHmac(input []byte, secret []byte, expected []byte) (bool, error) {
-	inputHmac, err := generateHmac(input, secret)
-	if err != nil {
-		return false, err
-	}
-
-	return hmac.Equal(inputHmac, expected), nil
 }

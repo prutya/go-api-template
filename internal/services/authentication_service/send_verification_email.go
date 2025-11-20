@@ -66,12 +66,12 @@ func (s *authenticationService) SendVerificationEmail(ctx context.Context, userI
 		return err
 	}
 
-	otpHash, err := generateHmac([]byte(otp), s.config.AuthenticationOtpHmacSecret)
+	optHash, err := s.argon2GenerateHashFromOTP(otp)
 	if err != nil {
 		return err
 	}
 
-	if err := userRepo.UpdateEmailVerificationOtpHmac(ctx, userID, otpHash); err != nil {
+	if err := userRepo.UpdateEmailVerificationOtpDigest(ctx, userID, optHash); err != nil {
 		return err
 	}
 

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bZ2M5lHp9dd3edFohIe91vWZdYXOxaBnRjhYF12a6mEp2wSrWRDZv1NNQeBTpig
+\restrict 9yE6gdDtay1sL4Skz0k5uZoRvjrZLbQK0XxF9EGeu4yDHfsSdBXQbnB30dZM3Jw
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -133,12 +133,12 @@ CREATE TABLE public.users (
     email text NOT NULL,
     password_digest text NOT NULL,
     email_verified_at timestamp with time zone,
-    email_verification_otp_hmac bytea,
+    email_verification_otp_digest text,
     email_verification_expires_at timestamp with time zone,
     email_verification_otp_attempts integer DEFAULT 0 NOT NULL,
     email_verification_cooldown_resets_at timestamp with time zone,
     email_verification_last_requested_at timestamp with time zone,
-    password_reset_otp_hmac bytea,
+    password_reset_otp_digest text,
     password_reset_expires_at timestamp with time zone,
     password_reset_otp_attempts integer DEFAULT 0 NOT NULL,
     password_reset_cooldown_resets_at timestamp with time zone,
@@ -282,13 +282,13 @@ ALTER TABLE ONLY public.sessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bZ2M5lHp9dd3edFohIe91vWZdYXOxaBnRjhYF12a6mEp2wSrWRDZv1NNQeBTpig
+\unrestrict 9yE6gdDtay1sL4Skz0k5uZoRvjrZLbQK0XxF9EGeu4yDHfsSdBXQbnB30dZM3Jw
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict UvhZXksR2calZoKCIMG9AEOB9amL1vC6c6YbGESotKKSsTNiellTld422ntFH8h
+\restrict W5JY7gSn42VKLCw9eo1bXegE19ivnjjIaDCozsvcVavEUUg8Yx04FkiG9CSh9u7
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -317,4 +317,4 @@ INSERT INTO public.schema_migrations VALUES ('20251116174456');
 -- PostgreSQL database dump complete
 --
 
-\unrestrict UvhZXksR2calZoKCIMG9AEOB9amL1vC6c6YbGESotKKSsTNiellTld422ntFH8h
+\unrestrict W5JY7gSn42VKLCw9eo1bXegE19ivnjjIaDCozsvcVavEUUg8Yx04FkiG9CSh9u7

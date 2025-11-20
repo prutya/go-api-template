@@ -46,7 +46,11 @@
 	"authentication_argon2_parallelism": 2,
 	"authentication_argon2_salt_length": 16,
 	"authentication_argon2_key_length": 32,
-  "authentication_otp_hmac_secret": "uriNSJdYtYK+GDx0vM8fXcljGLECw0Z7RQvns3pE2zs=",
+  "authentication_otp_argon2_memory": 32,
+	"authentication_otp_argon2_iterations": 1,
+	"authentication_otp_argon2_parallelism": 2,
+	"authentication_otp_argon2_salt_length": 16,
+	"authentication_otp_argon2_key_length": 16,
 
   "captcha_enabled": true,
   "captcha_turnstile_base_url": "https://challenges.cloudflare.com/turnstile/v0",

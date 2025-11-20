@@ -56,13 +56,12 @@ func (s *authenticationService) VerifyPasswordResetOTP(
 		return "", ErrPasswordResetExpired
 	}
 
-	// Verify OTP
-	hmacOk, err := checkHmac([]byte(otp), s.config.AuthenticationOtpHmacSecret, user.PasswordResetOtpHmac)
+	otpOk, err := argon2ComparePlaintextAndHash(otp, user.PasswordResetOtpDigest)
 	if err != nil {
 		return "", err
 	}
 
-	if !hmacOk {
+	if !otpOk {
 		logger.DebugContext(ctx, "Invalid OTP", "user_id", user.ID, "otp", otp)
 
 		if err := userRepo.IncrementPasswordResetAttempts(ctx, user.ID); err != nil {

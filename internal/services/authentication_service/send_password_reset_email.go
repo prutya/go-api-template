@@ -60,12 +60,12 @@ func (s *authenticationService) SendPasswordResetEmail(ctx context.Context, user
 		return err
 	}
 
-	otpHash, err := generateHmac([]byte(otp), s.config.AuthenticationOtpHmacSecret)
+	optHash, err := s.argon2GenerateHashFromOTP(otp)
 	if err != nil {
 		return err
 	}
 
-	if err := userRepo.UpdatePasswordResetOtpHmac(ctx, userID, otpHash); err != nil {
+	if err := userRepo.UpdatePasswordResetOtpDigest(ctx, userID, optHash); err != nil {
 		return err
 	}
 

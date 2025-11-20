@@ -30,7 +30,7 @@ func (s *authenticationService) Login(
 	}
 
 	// Check if the password is correct
-	passwordMatch, err := argon2ComparePasswordAndHash(password, user.PasswordDigest)
+	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
 	if err != nil {
 		return nil, err
 	}
