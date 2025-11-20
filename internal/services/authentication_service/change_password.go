@@ -2,14 +2,8 @@ package authentication_service
 
 import (
 	"context"
-	"errors"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
-// NOTE: I am not using transactions here, because if the password is changed
-// but there are still unterminated sessions, it's not a big deal, since we
-// can still terminate them manually
 func (s *authenticationService) ChangePassword(
 	ctx context.Context,
 	currentAccessTokenClaims *AccessTokenClaims,
@@ -17,7 +11,7 @@ func (s *authenticationService) ChangePassword(
 	newPassword string,
 	terminateOtherSessions bool,
 ) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 	sessionRepo := s.repoFactory.NewSessionRepo(s.db)
@@ -34,23 +28,24 @@ func (s *authenticationService) ChangePassword(
 		return err
 	}
 
-	// Check if the old password is correct
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(oldPassword)); err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return ErrInvalidCredentials
-		}
-
+	// Check if the password is correct
+	passwordMatch, err := argon2ComparePlaintextAndHash(oldPassword, user.PasswordDigest)
+	if err != nil {
 		return err
 	}
 
+	if !passwordMatch {
+		return ErrInvalidCredentials
+	}
+
 	// Hash the new password
-	newPasswordDigest, err := bcrypt.GenerateFromPassword([]byte(newPassword), s.config.AuthenticationBcryptCost)
+	newPasswordDigest, err := s.argon2GenerateHashFromPassword(newPassword)
 	if err != nil {
 		return err
 	}
 
 	// Update the user's password
-	if err := userRepo.UpdatePasswordDigest(ctx, user.ID, string(newPasswordDigest)); err != nil {
+	if err := userRepo.ChangePassword(ctx, user.ID, string(newPasswordDigest)); err != nil {
 		return err
 	}
 

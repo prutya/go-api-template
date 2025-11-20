@@ -6,12 +6,8 @@ import (
 	"errors"
 
 	"github.com/uptrace/bun"
-	"golang.org/x/crypto/bcrypt"
 )
 
-// NOTE: I am not using transactions here, because it's fine if there's a
-// session, refresh token or access token inserted without the rest of the
-// records
 func (s *authenticationService) Login(
 	ctx context.Context,
 	email string,
@@ -19,7 +15,7 @@ func (s *authenticationService) Login(
 	userAgent string,
 	ipAddress string,
 ) (*CreateTokensResult, error) {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 
@@ -34,12 +30,13 @@ func (s *authenticationService) Login(
 	}
 
 	// Check if the password is correct
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password)); err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return nil, ErrInvalidCredentials
-		}
-
+	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
+	if err != nil {
 		return nil, err
+	}
+
+	if !passwordMatch {
+		return nil, ErrInvalidCredentials
 	}
 
 	var createTokensResult *CreateTokensResult

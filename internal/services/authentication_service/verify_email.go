@@ -2,109 +2,85 @@ package authentication_service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"prutya/go-api-template/internal/logger"
-	"prutya/go-api-template/internal/models"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/uptrace/bun"
+	"time"
 )
-
-var ErrInvalidEmailVerificationTokenClaims = errors.New("invalid email verification token claims")
-var ErrEmailVerificationTokenNotFound = errors.New("email verification token not found")
-var ErrEmailVerificationTokenInvalid = errors.New("email verification token invalid")
 
 func (s *authenticationService) VerifyEmail(
 	ctx context.Context,
-	token string,
+	email string,
+	otp string,
 	userAgent string,
 	ipAddress string,
 ) (*CreateTokensResult, error) {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
-	emailVerificationTokenRepo := s.repoFactory.NewEmailVerificationTokenRepo(s.db)
+	logger := logger.MustFromContext(ctx)
 	userRepo := s.repoFactory.NewUserRepo(s.db)
+
+	user, err := userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			logger.DebugContext(ctx, ErrUserNotFound.Error(), "email", email)
+
+			return nil, ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	// Check number of attempts
+	if user.EmailVerificationOtpAttempts >= s.config.AuthenticationEmailVerificationMaxAttempts {
+		logger.DebugContext(ctx, ErrTooManyOTPAttempts.Error(), "user_id", user.ID)
+
+		return nil, ErrTooManyOTPAttempts
+	}
+
+	// Check expiration
+	if !user.EmailVerificationExpiresAt.Valid {
+		logger.DebugContext(ctx, ErrEmailVerificationNotRequested.Error(), "user_id", user.ID)
+
+		// This should not be null at this point
+		return nil, ErrEmailVerificationNotRequested
+	}
+
+	if user.EmailVerificationExpiresAt.Time.Before(time.Now().UTC()) {
+		logger.DebugContext(ctx, ErrEmailVerificationExpired.Error(), "user_id", user.ID)
+
+		return nil, ErrEmailVerificationExpired
+	}
+
+	otpOk, err := argon2ComparePlaintextAndHash(otp, user.EmailVerificationOtpDigest)
+	if err != nil {
+		return nil, err
+	}
+
+	if !otpOk {
+		logger.DebugContext(ctx, ErrInvalidOTP.Error(), "user_id", user.ID, "otp", otp)
+
+		if err := userRepo.IncrementEmailVerificationAttempts(ctx, user.ID); err != nil {
+			return nil, err
+		}
+
+		return nil, ErrInvalidOTP
+	}
+
+	if user.EmailVerifiedAt.Valid {
+		logger.DebugContext(ctx, ErrEmailAlreadyVerified.Error(), "user_id", user.ID)
+
+		return nil, ErrEmailAlreadyVerified
+	}
+
+	if err := userRepo.CompleteEmailVerification(ctx, user.ID); err != nil {
+		return nil, err
+	}
+
+	// Log the user in
 	sessionRepo := s.repoFactory.NewSessionRepo(s.db)
 	refreshTokenRepo := s.repoFactory.NewRefreshTokenRepo(s.db)
 	accessTokenRepo := s.repoFactory.NewAccessTokenRepo(s.db)
 
-	// Parse the email verification token
-	var dbEmailVerificationToken *models.EmailVerificationToken
-	_, err := jwt.ParseWithClaims(token, &EmailVerificationTokenClaims{}, func(token *jwt.Token) (any, error) {
-		// Extract the claims
-		emailVerificationTokenClaims_inner, ok := token.Claims.(*EmailVerificationTokenClaims)
-		if !ok {
-			return nil, ErrInvalidEmailVerificationTokenClaims
-		}
-
-		// Find the email verification token by ID
-		dbEmailVerificationToken_inner, err := emailVerificationTokenRepo.FindByID(
-			ctx, emailVerificationTokenClaims_inner.ID,
-		)
-		if err != nil {
-			return nil, ErrEmailVerificationTokenNotFound
-		}
-
-		dbEmailVerificationToken = dbEmailVerificationToken_inner
-
-		return dbEmailVerificationToken_inner.Secret, nil
-	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired())
-	if err != nil {
-		if errors.Is(err, ErrInvalidEmailVerificationTokenClaims) || errors.Is(err, ErrEmailVerificationTokenNotFound) {
-			return nil, err
-		}
-
-		return nil, ErrEmailVerificationTokenInvalid
-	}
-
-	// Check if the verification token has already been used
-	if dbEmailVerificationToken.VerifiedAt.Valid {
-		logger := logger.MustFromContext(ctx)
-
-		logger.WarnContext(
-			ctx,
-			"verification token already used",
-			"email_verification_token_id", dbEmailVerificationToken.ID,
-		)
-
-		return nil, ErrEmailVerificationTokenInvalid
-	}
-
-	// Find the user by ID
-	user, err := findUserByID(ctx, userRepo, dbEmailVerificationToken.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the email address is already verified
-	if user.EmailVerifiedAt.Valid {
-		return nil, ErrEmailAlreadyVerified
-	}
-
-	// NOTE: The token can only be used once, so we should make sure that it's
-	// applied properly via a transaction
-
-	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		userRepo := s.repoFactory.NewUserRepo(tx)
-		emailVerificationTokenRepo := s.repoFactory.NewEmailVerificationTokenRepo(tx)
-
-		// Mark the user's email address as verified
-		err = userRepo.MarkEmailAsVerified(ctx, user.ID)
-		if err != nil {
-			return err
-		}
-
-		// Mark the verification code as verified
-		err = emailVerificationTokenRepo.MarkAsVerified(ctx, dbEmailVerificationToken.ID)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	// Create a new session for the user
 	return s.createSession(ctx, sessionRepo, refreshTokenRepo, accessTokenRepo, user, userAgent, ipAddress)
 }

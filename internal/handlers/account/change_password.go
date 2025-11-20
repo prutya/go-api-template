@@ -7,6 +7,7 @@ import (
 
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -32,14 +33,15 @@ func NewChangePasswordHandler(config *config.Config, authenticationService authe
 			return
 		}
 
-		err := authenticationService.ChangePassword(
+		if err := authenticationService.ChangePassword(
 			r.Context(),
 			currentAccessTokenClaims,
 			reqBody.CurrentPassword,
 			reqBody.NewPassword,
 			reqBody.TerminateOtherSessions,
-		)
-		if err != nil {
+		); err != nil {
+			logger.MustWarnContext(r.Context(), "Password change failed", "error", err.Error())
+
 			if errors.Is(err, authentication_service.ErrInvalidCredentials) {
 				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
 				return

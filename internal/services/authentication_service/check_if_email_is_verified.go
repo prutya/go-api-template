@@ -8,7 +8,6 @@ import (
 
 var ErrEmailNotVerified = errors.New("email not verified")
 
-// NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) CheckIfEmailIsVerified(ctx context.Context, userID string) error {
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 

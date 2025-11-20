@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// NOTE: I am not using transactions here, because it's just a single write
-// operation
 func (s *authenticationService) TerminateUserSession(
 	ctx context.Context,
 	accessTokenClaims *AccessTokenClaims,
@@ -43,10 +41,10 @@ func (s *authenticationService) TerminateUserSession(
 		return isCurrentSession, ErrSessionAlreadyTerminated
 	}
 
-	if session.ExpiresAt.Before(time.Now()) {
+	if session.ExpiresAt.Before(time.Now().UTC()) {
 		return isCurrentSession, ErrSessionExpired
 	}
 
 	// Terminate
-	return isCurrentSession, sessionRepo.TerminateByID(ctx, session.ID, time.Now())
+	return isCurrentSession, sessionRepo.TerminateByID(ctx, session.ID, time.Now().UTC())
 }

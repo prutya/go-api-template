@@ -22,22 +22,25 @@ func NewAuthenticationMiddleware(authenticationService authentication_service.Au
 			// Read the token from Authorization header
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
+				logger.WarnContext(ctx, "Authorization header is missing")
+
 				RenderError(w, r, ErrUnauthorized)
 				return
 			}
 
 			tokenString := authHeader[len("Bearer "):]
 			if tokenString == "" {
+				logger.WarnContext(ctx, "Authorization header is malformed")
+
 				RenderError(w, r, ErrUnauthorized)
 				return
 			}
 
 			accessTokenClaims, err := authenticationService.Authenticate(ctx, tokenString)
-
 			if err != nil {
-				if errors.Is(err, authentication_service.ErrInvalidAccessTokenClaims) ||
-					errors.Is(err, authentication_service.ErrAccessTokenNotFound) ||
-					errors.Is(err, authentication_service.ErrInvalidAccessToken) {
+				logger.WarnContext(ctx, "Authentication failed", "error", err.Error())
+
+				if errors.Is(err, authentication_service.ErrInvalidAccessToken) {
 
 					RenderError(w, r, ErrUnauthorized)
 					return

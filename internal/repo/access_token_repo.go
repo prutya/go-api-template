@@ -14,13 +14,10 @@ type AccessTokenRepo interface {
 		ctx context.Context,
 		accessTokenId string,
 		refreshTokenId string,
-		secret []byte,
+		publicKey []byte,
 		expiresAt time.Time,
 	) error
-	FindById(
-		ctx context.Context,
-		id string,
-	) (*models.AccessToken, error)
+	FindById(ctx context.Context, id string) (*models.AccessToken, error)
 }
 
 type accessTokenRepo struct {
@@ -35,13 +32,13 @@ func (r *accessTokenRepo) Create(
 	ctx context.Context,
 	accessTokenId string,
 	refreshTokenId string,
-	secret []byte,
+	publicKey []byte,
 	expiresAt time.Time,
 ) error {
 	accessToken := &models.AccessToken{
 		ID:             accessTokenId,
 		RefreshTokenID: refreshTokenId,
-		Secret:         secret,
+		PublicKey:      publicKey,
 		ExpiresAt:      expiresAt,
 	}
 

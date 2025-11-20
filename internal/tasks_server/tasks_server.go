@@ -2,6 +2,8 @@ package tasks_server
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -73,8 +75,8 @@ func loggingMiddleware(h asynq.Handler) asynq.Handler {
 		logger.InfoContext(ctx, "Processing task", "task_type", t.Type())
 
 		err := h.ProcessTask(ctx, t)
-		if err != nil {
 
+		if err != nil {
 			logger.ErrorContext(ctx, "Failed to process task", "error", err, "duration", time.Since(start))
 
 			return err
@@ -84,4 +86,22 @@ func loggingMiddleware(h asynq.Handler) asynq.Handler {
 
 		return nil
 	})
+}
+
+func skipRetry(err error, skippedErrors ...error) (bool, error) {
+	return skipRetryWithError(err, asynq.SkipRetry, skippedErrors)
+}
+
+func revokeTask(err error, skippedErrors ...error) (bool, error) {
+	return skipRetryWithError(err, asynq.RevokeTask, skippedErrors)
+}
+
+func skipRetryWithError(err error, wrapperError error, skippedErrors []error) (bool, error) {
+	for i := range skippedErrors {
+		if errors.Is(err, skippedErrors[i]) {
+			return true, fmt.Errorf("%w: %v", wrapperError, err)
+		}
+	}
+
+	return false, err
 }

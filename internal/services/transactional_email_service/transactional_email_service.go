@@ -28,6 +28,7 @@ type transactionalEmailService struct {
 }
 
 func NewTransactionalEmailService(
+	ctx context.Context,
 	enabled bool,
 	dailyGlobalLimit int,
 	senderEmail string,
@@ -40,11 +41,11 @@ func NewTransactionalEmailService(
 	repoFactory repo.RepoFactory,
 ) (TransactionalEmailService, error) {
 	if !enabled {
-		return &noopTransactionalEmailService{
-			dailyGlobalLimit: dailyGlobalLimit,
-			db:               db,
-			repoFactory:      repoFactory,
-		}, nil
+		return newNoopTransactionalEmailService(ctx, dailyGlobalLimit, db, repoFactory)
+	}
+
+	if dailyGlobalLimit <= 0 {
+		logger.MustWarnContext(ctx, "Daily global email limit is <= 0, no emails will be sent")
 	}
 
 	scwClient, err := scw.NewClient(
@@ -79,7 +80,7 @@ func (s *transactionalEmailService) SendEmail(
 
 	emailSendAttemptRepo := s.repoFactory.NewEmailSendAttemptRepo(s.db)
 
-	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now()); err != nil {
+	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now().UTC()); err != nil {
 		return err
 	}
 

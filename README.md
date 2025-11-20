@@ -65,8 +65,11 @@ docker compose up postgres redis
 
 ### 4. Run database migrations
 
+The second part of the command is a workaround until `dbmate` image supports
+postgres version 18
+
 ```sh
-docker compose run --rm dbmate migrate
+docker compose run --rm dbmate migrate && docker compose run --rm dump_schema
 ```
 
 ### 5. Seed the database

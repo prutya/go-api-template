@@ -7,8 +7,12 @@ import (
 
 type noopCaptchaService struct{}
 
-func (s *noopCaptchaService) Verify(ctx context.Context, captchaResponse string, ip string) (bool, error) {
-	logger.MustFromContext(ctx).WarnContext(ctx, "Captcha verification is disabled, always returning true")
+func newNoopCaptchaService(ctx context.Context) CaptchaService {
+	logger.MustWarnContext(ctx, "Captcha verification is disabled. All verification attempts will succeed.")
 
+	return &noopCaptchaService{}
+}
+
+func (s *noopCaptchaService) Verify(ctx context.Context, captchaResponse string, ip string) (bool, error) {
 	return true, nil
 }

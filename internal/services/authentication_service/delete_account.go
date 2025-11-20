@@ -2,19 +2,14 @@ package authentication_service
 
 import (
 	"context"
-	"errors"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
-// NOTE: I am not using transactions here, because it's just a single write
-// operation
 func (s *authenticationService) DeleteAccount(
 	ctx context.Context,
 	accessTokenClaims *AccessTokenClaims,
 	password string,
 ) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
 	userRepo := s.repoFactory.NewUserRepo(s.db)
 
@@ -24,13 +19,14 @@ func (s *authenticationService) DeleteAccount(
 		return err
 	}
 
-	// Verify the password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password)); err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return ErrInvalidCredentials
-		}
-
+	// Check if the password is correct
+	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
+	if err != nil {
 		return err
+	}
+
+	if !passwordMatch {
+		return ErrInvalidCredentials
 	}
 
 	// Delete the user

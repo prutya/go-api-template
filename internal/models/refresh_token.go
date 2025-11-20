@@ -13,7 +13,7 @@ type RefreshToken struct {
 	ID              string         `bun:"id,pk"`
 	SessionID       string         `bun:"session_id"`
 	ParentID        sql.NullString `bun:"parent_id"`
-	Secret          []byte         `bun:"secret"`
+	PublicKey       []byte         `bun:"public_key"`
 	ExpiresAt       time.Time      `bun:"expires_at"`
 	RevokedAt       sql.NullTime   `bun:"revoked_at"`
 	LeewayExpiresAt sql.NullTime   `bun:"leeway_expires_at"`

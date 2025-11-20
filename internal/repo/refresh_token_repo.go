@@ -19,9 +19,7 @@ type RefreshTokenRepo interface {
 		secret []byte,
 		expiresAt time.Time,
 	) error
-
 	FindById(ctx context.Context, id string) (*models.RefreshToken, error)
-
 	Revoke(ctx context.Context, id string, revokedAt time.Time, leewayExpiresAt time.Time) error
 }
 
@@ -38,14 +36,14 @@ func (r *refreshTokenRepo) Create(
 	refreshTokenId string,
 	sessionId string,
 	parentId sql.NullString,
-	secret []byte,
+	publicKey []byte,
 	expiresAt time.Time,
 ) error {
 	refreshToken := &models.RefreshToken{
 		ID:        refreshTokenId,
 		SessionID: sessionId,
 		ParentID:  parentId,
-		Secret:    secret,
+		PublicKey: publicKey,
 		ExpiresAt: expiresAt,
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -32,9 +33,20 @@ func NewRequestEmailVerificationHandler(
 
 		// Request new verification email
 		if err := authenticationService.RequestNewVerificationEmail(r.Context(), reqBody.Email); err != nil {
-			// We don't want to leak information about whether the email is already
-			// registered, so we always return a 204 No Content response.
-			if errors.Is(err, authentication_service.ErrUserNotFound) {
+			logger.MustWarnContext(r.Context(), "Email verification request failed", "error", err.Error())
+
+			if errors.Is(err, authentication_service.ErrEmailDomainNotAllowed) {
+				utils.RenderError(w, r, utils.NewServerError(err.Error(), http.StatusUnprocessableEntity))
+				return
+			}
+
+			// We don't want to leak information about whether the account already
+			// exists so we always return 204
+			if errors.Is(err, authentication_service.ErrUserRecordLocked) ||
+				errors.Is(err, authentication_service.ErrUserNotFound) ||
+				errors.Is(err, authentication_service.ErrEmailAlreadyVerified) ||
+				errors.Is(err, authentication_service.ErrEmailVerificationCooldown) {
+
 				utils.RenderNoContent(w, r, nil)
 				return
 			}

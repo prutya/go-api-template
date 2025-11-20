@@ -21,7 +21,9 @@ var responseInfoContextKey = responseInfoContextKeyType{}
 func NewLoggerMiddleware(logger *loggerpkg.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			requestLogger := logger
+			var requestLogger *loggerpkg.Logger
+
+			requestLogger = logger
 
 			// Add request_id to the logger output
 			if requestId, requestIdOk := GetRequestId(r); requestIdOk {

@@ -72,7 +72,7 @@ func NewRouter(
 	mux.Route("/account", func(r chi.Router) {
 		r.Post("/refresh-session", account.NewRefreshSessionHandler(config, authenticationService))
 		r.Post("/verify-email", account.NewVerifyEmailHandler(config, authenticationService))
-		r.Post("/reset-password", account.NewResetPasswordHandler(authenticationService))
+		r.Post("/reset-password", account.NewResetPasswordHandler(config, authenticationService))
 
 		r.Group(func(r chi.Router) {
 			r.Use(captchaCheckMiddleware)
@@ -81,6 +81,7 @@ func NewRouter(
 			r.Post("/register", account.NewRegisterHandler(authenticationService))
 			r.Post("/request-email-verification", account.NewRequestEmailVerificationHandler(authenticationService))
 			r.Post("/request-password-reset", account.NewRequestPasswordResetHandler(authenticationService))
+			r.Post("/verify-password-reset-otp", account.NewVerifyPasswordResetOTPHandler(config, authenticationService))
 		})
 
 		r.Group(func(r chi.Router) {

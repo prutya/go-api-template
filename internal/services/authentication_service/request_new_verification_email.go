@@ -4,35 +4,64 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
-	"prutya/go-api-template/internal/tasks"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/uptrace/bun"
 )
 
-// NOTE: I am not using transactions here, because it's just a read operation
 func (s *authenticationService) RequestNewVerificationEmail(ctx context.Context, email string) error {
-	defer withMinimumAllowedFunctionDuration(s.config.AuthenticationTimingAttackDelay)()
+	defer withMinimumAllowedFunctionDuration(ctx, s.config.AuthenticationTimingAttackDelay)()
 
-	userRepo := s.repoFactory.NewUserRepo(s.db)
+	var userID string
 
-	// Find the user by email
-	user, err := userRepo.FindByEmail(ctx, email)
+	if err := s.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		userRepo := s.repoFactory.NewUserRepo(tx)
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrUserNotFound
+		user, err := userRepo.FindByEmailForUpdateNowait(ctx, email)
+		if err != nil {
+			// Handle postgres lock error
+			if pgErr, isPgErr := err.(*pgconn.PgError); isPgErr && pgErr.Code == "55P03" {
+				return ErrUserRecordLocked
+			}
+
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrUserNotFound
+			}
+
+			return err
 		}
 
+		userID = user.ID
+
+		// If the email is already registered, and is verified, do nothing
+		if user.EmailVerifiedAt.Valid {
+			return ErrEmailAlreadyVerified
+		}
+
+		// Check cooldown
+		if user.EmailVerificationCooldownResetsAt.Valid && user.EmailVerificationCooldownResetsAt.Time.After(time.Now().UTC()) {
+			return ErrEmailVerificationCooldown
+		}
+
+		// Reset OTP hash and attempts, update cooldown and OTP expiration time
+		if err := userRepo.StartEmailVerification(
+			ctx,
+			userID,
+			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCodeTTL),
+			time.Now().UTC().Add(s.config.AuthenticationEmailVerificationCooldown),
+		); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
 
 	// Schedule a verification email
-	task, err := tasks.NewSendVerificationEmailTask(user.ID)
-	if err != nil {
-		return err
-	}
 
-	_, err = s.tasksClient.Enqueue(ctx, task)
-	if err != nil {
+	if err := s.scheduleEmailVerification(ctx, userID); err != nil {
 		return err
 	}
 

@@ -7,6 +7,7 @@
       "mode": "auto",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/cmd/server/main.go",
+      "buildFlags": "-tags=debug",
       "args": [],
       "showLog": false,
     },
@@ -17,6 +18,7 @@
       "mode": "auto",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/cmd/worker/main.go",
+      "buildFlags": "-tags=debug",
       "args": [],
       "showLog": false,
     }

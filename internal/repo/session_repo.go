@@ -123,7 +123,7 @@ func (s *sessionRepo) TerminateByID(ctx context.Context, sessionId string, termi
 		Set("updated_at = now()").
 		Where("id = ?", sessionId).
 		Where("terminated_at IS NULL").
-		Where("expires_at > ?", time.Now()).
+		Where("expires_at > ?", time.Now().UTC()).
 		Exec(ctx)
 
 	return err
@@ -142,7 +142,7 @@ func (s *sessionRepo) TerminateSessionByAccessTokenId(ctx context.Context, acces
 			WHERE access_tokens.id = ?
 		)`, accessTokenId).
 		Where("terminated_at IS NULL").
-		Where("expires_at > ?", time.Now()).
+		Where("expires_at > ?", time.Now().UTC()).
 		Exec(ctx)
 
 	return err
@@ -156,7 +156,7 @@ func (s *sessionRepo) TerminateAllSessionsExceptCurrentByUserID(ctx context.Cont
 		Where("user_id = ?", userID).
 		Where("id != ?", currentSessionID).
 		Where("terminated_at IS NULL").
-		Where("expires_at > ?", time.Now()).
+		Where("expires_at > ?", time.Now().UTC()).
 		Exec(ctx)
 
 	return err
@@ -169,7 +169,7 @@ func (s *sessionRepo) TerminateAllSessions(ctx context.Context, userID string) e
 		Set("updated_at = now()").
 		Where("user_id = ?", userID).
 		Where("terminated_at IS NULL").
-		Where("expires_at > ?", time.Now()).
+		Where("expires_at > ?", time.Now().UTC()).
 		Exec(ctx)
 
 	return err
@@ -196,7 +196,7 @@ func (r *sessionRepo) GetActiveForUserWithPagination(
 		Model(&models.Session{}).
 		Where("user_id = ?", userID).
 		Where("terminated_at IS NULL").
-		Where("expires_at > ?", time.Now()).
+		Where("expires_at > ?", time.Now().UTC()).
 		Order("id DESC").
 		Limit(pageSize)
 

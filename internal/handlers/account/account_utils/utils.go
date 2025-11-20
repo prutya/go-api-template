@@ -14,8 +14,8 @@ func SetRefreshTokenCookie(config *config.Config, w http.ResponseWriter, value s
 		Path:     config.AuthenticationRefreshTokenCookiePath,
 		Value:    value,
 		Expires:  expiresAt,
-		Secure:   true,
-		HttpOnly: true,
+		Secure:   config.AuthenticationRefreshTokenCookieSecure,
+		HttpOnly: config.AuthenticationRefreshTokenCookieHttpOnly,
 		SameSite: http.SameSiteStrictMode,
 	})
 }

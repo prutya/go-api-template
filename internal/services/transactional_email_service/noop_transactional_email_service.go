@@ -16,6 +16,21 @@ type noopTransactionalEmailService struct {
 	repoFactory      repo.RepoFactory
 }
 
+func newNoopTransactionalEmailService(
+	ctx context.Context,
+	dailyGlobalLimit int,
+	db bun.IDB,
+	repoFactory repo.RepoFactory,
+) (TransactionalEmailService, error) {
+	logger.MustWarnContext(ctx, "Transactional emails delivery is disabled. Email text versions will be printed to stdout.")
+
+	return &noopTransactionalEmailService{
+		dailyGlobalLimit: dailyGlobalLimit,
+		db:               db,
+		repoFactory:      repoFactory,
+	}, nil
+}
+
 func (s *noopTransactionalEmailService) SendEmail(
 	ctx context.Context,
 	email string,
@@ -28,13 +43,13 @@ func (s *noopTransactionalEmailService) SendEmail(
 
 	emailSendAttemptRepo := s.repoFactory.NewEmailSendAttemptRepo(s.db)
 
-	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now()); err != nil {
+	if err := checkGlobalLimit(ctx, s.dailyGlobalLimit, emailSendAttemptRepo, time.Now().UTC()); err != nil {
 		return err
 	}
 
 	logger.WarnContext(
 		ctx,
-		"Transactional email sending is disabled, faking email sending",
+		"Fake transactional email",
 		"subject", subject,
 		"text_body", textBody,
 		"user_id", userID,

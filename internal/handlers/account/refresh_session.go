@@ -7,6 +7,7 @@ import (
 	"prutya/go-api-template/internal/config"
 	"prutya/go-api-template/internal/handlers/account/account_utils"
 	"prutya/go-api-template/internal/handlers/utils"
+	"prutya/go-api-template/internal/logger"
 	"prutya/go-api-template/internal/services/authentication_service"
 )
 
@@ -34,9 +35,9 @@ func NewRefreshSessionHandler(
 		// Refresh
 		refreshResult, err := authenticationService.Refresh(r.Context(), refreshTokenCookie.Value)
 		if err != nil {
-			if errors.Is(err, authentication_service.ErrInvalidRefreshTokenClaims) ||
-				errors.Is(err, authentication_service.ErrRefreshTokenNotFound) ||
-				errors.Is(err, authentication_service.ErrRefreshTokenInvalid) ||
+			logger.MustWarnContext(r.Context(), "Session refresh failed", "error", err.Error())
+
+			if errors.Is(err, authentication_service.ErrInvalidRefreshToken) ||
 				errors.Is(err, authentication_service.ErrRefreshTokenRevoked) ||
 				errors.Is(err, authentication_service.ErrSessionNotFound) ||
 				errors.Is(err, authentication_service.ErrSessionAlreadyTerminated) {
