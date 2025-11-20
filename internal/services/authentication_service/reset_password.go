@@ -12,9 +12,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// TODO: Move errors from the common file closer to each method to reduce
-// WTFs per second when reading this code
-
 func (s *authenticationService) ResetPassword(
 	ctx context.Context,
 	token string,
