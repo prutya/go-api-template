@@ -140,7 +140,7 @@ services:
   lint:
     image: docker.io/golangci/golangci-lint:v2.4.0-alpine
     volumes:
-      - .:/app
+      - ${GO_API_TEMPLATE_ROOT:-.}:/app
     working_dir: /app
     command: ["golangci-lint", "run", "--verbose"]
 
@@ -165,7 +165,7 @@ services:
     environment:
       APP_DATABASE_URL: postgres://postgres:postgres@postgres_test:5432/postgres?sslmode=disable
     volumes:
-      - .:/app
+      - "${GO_API_TEMPLATE_ROOT:-.}:/app"
     command: ["ginkgo", "-v", "-r", "./..."]
     networks:
       - app_test

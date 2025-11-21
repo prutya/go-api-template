@@ -140,3 +140,6 @@ Server, worker and scheduler binaries will be in the same image
 ```sh
 docker build . --tag go-api-template:latest
 ```
+
+## Enabling linters in IDE
+https://golangci-lint.run/docs/welcome/integrations/

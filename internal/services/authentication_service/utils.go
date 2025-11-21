@@ -183,7 +183,7 @@ func (s *authenticationService) argon2GenerateHashFromOTP(otp string) (string, e
 	return encodedHash, nil
 }
 
-func argon2ComparePlaintextAndHash(plaintext, encodedHash string) (match bool, err error) {
+func argon2ComparePlaintextAndHash(plaintext, encodedHash string) (bool, error) {
 	// Extract the parameters, salt and derived key from the encoded hash
 	p, salt, hash, err := argon2DecodeHash(encodedHash)
 	if err != nil {
@@ -202,37 +202,37 @@ func argon2ComparePlaintextAndHash(plaintext, encodedHash string) (match bool, e
 	return false, nil
 }
 
-func argon2DecodeHash(encodedHash string) (p *argon2params, salt, hash []byte, err error) {
+func argon2DecodeHash(encodedHash string) (*argon2params, []byte, []byte, error) {
 	vals := strings.Split(encodedHash, "$")
 	if len(vals) != 6 {
 		return nil, nil, nil, errArgon2InvalidHash
 	}
 
 	var version int
-	_, err = fmt.Sscanf(vals[2], "v=%d", &version)
-	if err != nil {
+	if _, err := fmt.Sscanf(vals[2], "v=%d", &version); err != nil {
 		return nil, nil, nil, err
 	}
 	if version != argon2.Version {
 		return nil, nil, nil, errArgon2IncompatibleVersion
 	}
 
-	p = &argon2params{}
-	_, err = fmt.Sscanf(vals[3], "m=%d,t=%d,p=%d", &p.memory, &p.iterations, &p.parallelism)
-	if err != nil {
+	p := &argon2params{}
+	if _, err := fmt.Sscanf(vals[3], "m=%d,t=%d,p=%d", &p.memory, &p.iterations, &p.parallelism); err != nil {
 		return nil, nil, nil, err
 	}
 
-	salt, err = base64.RawStdEncoding.Strict().DecodeString(vals[4])
+	salt, err := base64.RawStdEncoding.Strict().DecodeString(vals[4])
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	// #nosec G115 -- salt length is guaranteed to be < 2^32
 	p.saltLength = uint32(len(salt))
 
-	hash, err = base64.RawStdEncoding.Strict().DecodeString(vals[5])
+	hash, err := base64.RawStdEncoding.Strict().DecodeString(vals[5])
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	// #nosec G115 -- salt length is guaranteed to be < 2^32
 	p.keyLength = uint32(len(hash))
 
 	return p, salt, hash, nil

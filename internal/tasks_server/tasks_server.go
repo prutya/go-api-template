@@ -92,9 +92,10 @@ func skipRetry(err error, skippedErrors ...error) (bool, error) {
 	return skipRetryWithError(err, asynq.SkipRetry, skippedErrors)
 }
 
-func revokeTask(err error, skippedErrors ...error) (bool, error) {
-	return skipRetryWithError(err, asynq.RevokeTask, skippedErrors)
-}
+// Can be used to revoke tasks
+// func revokeTask(err error, skippedErrors ...error) (bool, error) {
+// 	return skipRetryWithError(err, asynq.RevokeTask, skippedErrors)
+// }
 
 func skipRetryWithError(err error, wrapperError error, skippedErrors []error) (bool, error) {
 	for i := range skippedErrors {
