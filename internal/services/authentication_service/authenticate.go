@@ -61,10 +61,12 @@ func (s *authenticationService) Authenticate(
 		return publicKey.(*ecdsa.PublicKey), nil
 	}
 
+	claims := &AccessTokenClaims{}
+
 	// Parse the token
-	parsedToken, err := jwt.ParseWithClaims(
+	_, err := jwt.ParseWithClaims(
 		accessToken,
-		&AccessTokenClaims{},
+		claims,
 		keyFunc,
 		jwt.WithValidMethods([]string{"ES256"}),
 		jwt.WithExpirationRequired(),
@@ -74,11 +76,6 @@ func (s *authenticationService) Authenticate(
 		logger.DebugContext(ctx, "Access token verification failed", "access_token", accessToken)
 
 		return nil, ErrInvalidAccessToken
-	}
-
-	claims, ok := parsedToken.Claims.(*AccessTokenClaims)
-	if !ok {
-		return nil, ErrInvalidAccessTokenClaims
 	}
 
 	return claims, nil
