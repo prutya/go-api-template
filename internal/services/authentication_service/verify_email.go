@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"prutya/go-api-template/internal/argon2_utils"
 	"prutya/go-api-template/internal/logger"
 	"time"
 )
@@ -52,7 +53,7 @@ func (s *authenticationService) VerifyEmail(
 		return nil, ErrEmailVerificationExpired
 	}
 
-	otpOk, err := argon2ComparePlaintextAndHash(otp, user.EmailVerificationOtpDigest)
+	otpOk, err := argon2_utils.Compare(otp, user.EmailVerificationOtpDigest)
 	if err != nil {
 		return nil, err
 	}

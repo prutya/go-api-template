@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"prutya/go-api-template/internal/argon2_utils"
 	"prutya/go-api-template/internal/logger"
 )
 
@@ -56,7 +57,7 @@ func (s *authenticationService) VerifyPasswordResetOTP(
 		return "", ErrPasswordResetExpired
 	}
 
-	otpOk, err := argon2ComparePlaintextAndHash(otp, user.PasswordResetOtpDigest)
+	otpOk, err := argon2_utils.Compare(otp, user.PasswordResetOtpDigest)
 	if err != nil {
 		return "", err
 	}

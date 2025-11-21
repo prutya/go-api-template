@@ -2,6 +2,7 @@ package authentication_service
 
 import (
 	"context"
+	"prutya/go-api-template/internal/argon2_utils"
 )
 
 func (s *authenticationService) ChangePassword(
@@ -29,7 +30,7 @@ func (s *authenticationService) ChangePassword(
 	}
 
 	// Check if the password is correct
-	passwordMatch, err := argon2ComparePlaintextAndHash(oldPassword, user.PasswordDigest)
+	passwordMatch, err := argon2_utils.Compare(oldPassword, user.PasswordDigest)
 	if err != nil {
 		return err
 	}

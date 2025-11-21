@@ -2,6 +2,7 @@ package authentication_service
 
 import (
 	"context"
+	"prutya/go-api-template/internal/argon2_utils"
 )
 
 func (s *authenticationService) DeleteAccount(
@@ -20,7 +21,7 @@ func (s *authenticationService) DeleteAccount(
 	}
 
 	// Check if the password is correct
-	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
+	passwordMatch, err := argon2_utils.Compare(password, user.PasswordDigest)
 	if err != nil {
 		return err
 	}

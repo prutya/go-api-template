@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"prutya/go-api-template/internal/argon2_utils"
 
 	"github.com/uptrace/bun"
 )
@@ -30,7 +31,7 @@ func (s *authenticationService) Login(
 	}
 
 	// Check if the password is correct
-	passwordMatch, err := argon2ComparePlaintextAndHash(password, user.PasswordDigest)
+	passwordMatch, err := argon2_utils.Compare(password, user.PasswordDigest)
 	if err != nil {
 		return nil, err
 	}
