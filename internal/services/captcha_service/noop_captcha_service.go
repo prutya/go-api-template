@@ -14,5 +14,7 @@ func newNoopCaptchaService(ctx context.Context) CaptchaService {
 }
 
 func (s *noopCaptchaService) Verify(ctx context.Context, captchaResponse string, ip string) (bool, error) {
+	logger.MustWarnContext(ctx, "Fake captcha verification returns true")
+
 	return true, nil
 }

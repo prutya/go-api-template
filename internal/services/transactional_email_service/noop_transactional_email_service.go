@@ -51,9 +51,9 @@ func (s *noopTransactionalEmailService) SendEmail(
 		ctx,
 		"Fake transactional email",
 		"subject", subject,
-		"text_body", textBody,
 		"user_id", userID,
 	)
+	logger.DebugContext(ctx, "Fake transactional email body", "text_body", textBody)
 
 	if err := emailSendAttemptRepo.Create(ctx); err != nil {
 		return err
