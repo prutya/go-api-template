@@ -13,7 +13,7 @@ x-shared-configuration:
       POSTGRES_DB: postgres
 
   redis: &redis
-    image: docker.io/redis:8.2.1-alpine3.22
+    image: docker.io/valkey/valkey:9.0.0-alpine3.22
     environment:
       REDIS_PASSWORD: app_redis_password
 
