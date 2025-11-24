@@ -83,8 +83,8 @@ docker compose run --rm psql --echo-all --file /db/seed.sql
 ```sh
 air -c ./.air.server.toml
 
-# Or
-go run cmd/server/main.go
+# Or (without hot reload)
+go run -tags=debug cmd/server/main.go
 ```
 
 ### Recreating the database
@@ -105,8 +105,8 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 ```sh
 air -c ./.air.worker.toml
 
-# Or
-go run cmd/worker/main.go
+# Or (without hot reload)
+go run -tags=debug cmd/worker/main.go
 ```
 
 ## Running the background jobs scheduler (CRON-like) locally
@@ -118,8 +118,8 @@ Make sure that steps 1-4 from **Running the app locally** are completed
 ```sh
 air -c ./.air.scheduler.toml
 
-# Or
-go run cmd/scheduler/main.go
+# Or (without hot reload)
+go run -tags=debug cmd/scheduler/main.go
 ```
 
 ## Running tests
