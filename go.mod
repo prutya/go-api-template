@@ -9,7 +9,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/hibiken/asynq v0.25.1
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35
 	github.com/spf13/viper v1.21.0
 	github.com/uptrace/bun v1.2.16
